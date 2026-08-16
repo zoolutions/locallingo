@@ -8,8 +8,8 @@ permissions:
   packages: write
 jobs:
   deploy:
-    uses: mhenrixon/docs-kit/.github/workflows/deploy.yml@main
+    uses: zoolutions/docs-kit/.github/workflows/deploy.yml@main
     with:
-      image: mhenrixon/locallingo
+      image: zoolutions/locallingo
       service: locallingo
     secrets: inherit

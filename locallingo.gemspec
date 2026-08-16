@@ -36,11 +36,11 @@ Gem::Specification.new do |s|
   s.bindir = "exe"
   s.executables = s.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
 
-  s.homepage = "https://github.com/mhenrixon/locallingo"
+  s.homepage = "https://github.com/zoolutions/locallingo"
   s.metadata = {
-    "source_code_uri" => "https://github.com/mhenrixon/locallingo",
-    "changelog_uri" => "https://github.com/mhenrixon/locallingo/blob/main/CHANGELOG.md",
-    "bug_tracker_uri" => "https://github.com/mhenrixon/locallingo/issues",
+    "source_code_uri" => "https://github.com/zoolutions/locallingo",
+    "changelog_uri" => "https://github.com/zoolutions/locallingo/blob/main/CHANGELOG.md",
+    "bug_tracker_uri" => "https://github.com/zoolutions/locallingo/issues",
     "rubygems_mfa_required" => "true"
   }
 
