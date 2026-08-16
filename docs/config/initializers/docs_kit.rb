@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+# docs-kit synced: v1.0.8
+
 # docs-kit configuration — everything that makes this site look like "locallingo"
 # rather than any other docs site. The shared chrome (Shell/Sidebar/ThemeSwitcher/
 # Code/Page) comes from the gem; only this config differs per site. The `themes`
@@ -32,7 +34,7 @@ Rails.application.config.to_prepare do
 
     # A link to the source repo + the gem, rendered with shipped brand marks.
     c.topbar_links = [
-      { href: "https://github.com/mhenrixon/locallingo", label: "GitHub", icon: :github },
+      { href: "https://github.com/zoolutions/locallingo", label: "GitHub", icon: :github },
       { href: "https://rubygems.org/gems/locallingo", label: "RubyGems", icon: :rubygems }
     ]
 
@@ -66,7 +68,7 @@ Rails.application.config.to_prepare do
     c.landing.install = { code: 'gem "locallingo", group: :development', filename: "Gemfile", lexer: :ruby }
     c.landing.ctas = [
       { label: "Get started", href: "/docs/overview", style: :primary },
-      { label: "GitHub", href: "https://github.com/mhenrixon/locallingo", style: :ghost, icon: :github }
+      { label: "GitHub", href: "https://github.com/zoolutions/locallingo", style: :ghost, icon: :github }
     ]
     c.landing.features = [
       { icon: "languages", title: "AI translation",
