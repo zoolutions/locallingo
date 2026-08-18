@@ -7,6 +7,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Fixed
+- State files are written with a trailing final newline, so the output is
+  POSIX-conformant and files that already end with a newline are no longer
+  rewritten with newline-only diffs. One-time effect after upgrading: each
+  state file gets a single newline-adding rewrite, then stabilizes. (#7)
 - `lingo sync` backfills a missing `target_hash` from the current target value,
   so hand-added translations (written straight into the YAML, never passing
   through `translate` or `accept-edits`) get a baseline and the `manual_edits`

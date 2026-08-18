@@ -51,7 +51,7 @@ module Locallingo
 
       by_namespace.each do |namespace, keys|
         state_file = File.join(state_dir, "#{namespace}.#{locale}.json")
-        content = JSON.pretty_generate(keys.sort.to_h)
+        content = "#{JSON.pretty_generate(keys.sort.to_h)}\n"
         next if File.exist?(state_file) && File.read(state_file) == content
 
         File.write(state_file, content)
