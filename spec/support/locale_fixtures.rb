@@ -51,7 +51,7 @@ module LocaleFixtures
   def write_state(root, filename, entries)
     dir = File.join(root, ".i18n-state")
     FileUtils.mkdir_p(dir)
-    File.write(File.join(dir, filename), JSON.pretty_generate(entries))
+    File.write(File.join(dir, filename), "#{JSON.pretty_generate(entries)}\n")
   end
 
   def read_state(root, filename)

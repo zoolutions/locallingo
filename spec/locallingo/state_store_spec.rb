@@ -18,6 +18,29 @@ RSpec.describe Locallingo::StateStore do
       end
     end
 
+    it "writes state files with a trailing final newline" do
+      Dir.mktmpdir("locallingo-state") do |dir|
+        store = described_class.new(dir)
+        store.save("de", { "a.x" => { "source_hash" => "11111111" } })
+
+        expect(File.read(File.join(dir, "a.de.json"))).to end_with("}\n")
+      end
+    end
+
+    it "does not rewrite a file that already ends with a trailing newline" do
+      Dir.mktmpdir("locallingo-state") do |dir|
+        store = described_class.new(dir)
+        file = File.join(dir, "a.de.json")
+        content = JSON.pretty_generate({ "a.x" => { "source_hash" => "11111111" } })
+        File.write(file, "#{content}\n")
+        File.utime(Time.at(0), Time.at(0), file)
+
+        store.save("de", { "a.x" => { "source_hash" => "11111111" } })
+
+        expect(File.mtime(file)).to eq(Time.at(0))
+      end
+    end
+
     it "rewrites when content changed" do
       Dir.mktmpdir("locallingo-state") do |dir|
         store = described_class.new(dir)

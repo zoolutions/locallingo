@@ -1,0 +1,57 @@
+# Git Workflow Rules
+
+## Commit Messages
+
+Use conventional commits:
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code refactoring
+- `perf:` - Performance improvement
+- `docs:` - Documentation only
+- `test:` - Adding/updating tests
+- `chore:` - Maintenance tasks
+- `ci:` - CI/CD changes
+
+Format:
+```
+feat(scope): brief description
+
+Longer explanation if needed. Focus on WHY, not WHAT.
+
+Refs #123
+```
+
+## Branch Naming
+
+- `feature/description` - New features
+- `fix/description` - Bug fixes
+- `refactor/description` - Refactoring
+- `ci/description` - CI changes
+- `chore/description` - Maintenance
+
+## PR Workflow
+
+1. Create branch from `main`
+2. Make focused, atomic commits
+3. Run all validators before pushing
+4. Create PR with description and test plan
+5. Request review
+6. Squash merge when approved
+
+## Pre-Commit Checklist
+
+Run before EVERY commit:
+```bash
+bundle exec rake rubocop            # Style
+bundle exec rspec <relevant_specs>  # Tests
+```
+
+## Rules
+
+- **NEVER** commit directly to `main`
+- **NEVER** force push to shared branches
+- **NEVER** touch `lib/locallingo/version.rb` in a PR — `rake release[x.y.z]` owns the version bump
+- **ALWAYS** run validators before committing
+- **ALWAYS** write meaningful commit messages
+- Keep commits small and focused
+- One logical change per commit
