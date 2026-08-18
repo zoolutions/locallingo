@@ -1,0 +1,29 @@
+.claude/commands/review-pr.md
+  s_f6879d3422bd16::t_ebf7500816cf2c 14
+  s_f6879d3422bd16::t_3c666f348b2f83 62-64
+  s_f6879d3422bd16::t_65adf9d89cebc3 5
+CLAUDE.md
+  s_f6879d3422bd16::t_3ea05e71e6456d 8
+.claude/commands/plan.md
+  s_f6879d3422bd16::t_24616fb30ee47a 86
+.claude/commands/lfg.md
+  s_f6879d3422bd16::t_4b27637ce48987 17-22
+.claude/commands/security.md
+  s_f6879d3422bd16::t_e3722b8641aed3 86-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "4eff12d859d3d8b705109bfc0ba762f14639f8ee",
+  "prompts": {},
+  "sessions": {
+    "s_f6879d3422bd16": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ea5607f-a748-4b48-9833-cdc62afc1c32",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
