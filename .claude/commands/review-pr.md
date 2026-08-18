@@ -2,6 +2,7 @@
 description: Review a GitHub pull request for code quality, patterns, and best practices
 model: opus
 argument-hint: "PR URL or number (e.g., 5 or https://github.com/zoolutions/locallingo/pull/5)"
+allowed-tools: Bash(gh pr view:*), Bash(gh pr diff:*), Bash(gh pr checks:*), Bash(bundle exec:*), Bash(git:*), Read, Glob, Grep
 ---
 
 # PR Review
@@ -10,7 +11,7 @@ Review PR for pattern compliance and issues. Be concise.
 
 ## Workflow
 
-1. Fetch PR details and diff via `mcp__github__pull_request_read`
+1. Fetch PR details and diff via `gh pr view` / `gh pr diff`
 2. Categorize files by type
 3. Check for pattern violations
 4. Output structured review
@@ -58,11 +59,9 @@ rescue StandardError => nil         -> Specific error handling
 ## Tools
 
 ```
-mcp__github__pull_request_read
-  method: "get"        -> PR details
-  method: "get_diff"   -> Changes
-  method: "get_files"  -> File list
-  method: "get_status" -> CI status
+gh pr view <PR> --json title,body,state,files  -> PR details + file list
+gh pr diff <PR>                                -> Changes
+gh pr checks <PR>                              -> CI status
 
 bundle exec rake rubocop  -> Style checks
 bundle exec rspec         -> Tests

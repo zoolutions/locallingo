@@ -83,7 +83,8 @@ File.join(state_dir, "#{namespace}.#{locale}.json")
 # Static analysis
 bundle exec rake rubocop
 
-# Check for known vulnerabilities in dependencies
+# Check for known vulnerabilities in dependencies (bundler-audit is not a
+# project dependency — install it first if missing: gem install bundler-audit)
 bundle audit check --update
 
 # Review key handling

@@ -83,7 +83,7 @@ Use this structure for the issue body or markdown file. Every section is load-be
 Execute with `/lfg <issue-number>` (or `/lfg docs/plans/<file>.md`).
 ```
 
-For GitHub issues: create with `gh issue create --title "..." --body-file <tmpfile>`. Write the body to a temp file first; do not use inline heredoc with `gh pr create --body` (code fences get mangled by shell interpolation).
+For GitHub issues: create with `gh issue create --title "..." --body-file <tmpfile>`. Write the body to a temp file first; do not use inline heredoc with `gh issue create --body` (code fences get mangled by shell interpolation).
 
 For markdown files: Write to `docs/plans/YYYY-MM-DD-<slug>.md`. Leave it uncommitted — committing is the user's call.
 

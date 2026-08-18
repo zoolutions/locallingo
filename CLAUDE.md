@@ -5,7 +5,7 @@ i18n-tasks — packaged as a gem (ships the `lingo` CLI).
 
 ## Tech Stack
 
-- **Ruby**: >= 3.3
+- **Ruby**: >= 3.2 (CI matrix: 3.2, 3.3, 3.4)
 - **Translation**: RubyLLM (OpenAI, Anthropic, Google, … — provider-agnostic)
 - **i18n plumbing**: i18n-tasks
 - **Testing**: RSpec + SimpleCov

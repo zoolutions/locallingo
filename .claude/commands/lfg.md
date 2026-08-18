@@ -14,9 +14,12 @@ Execute a complete engineering workflow with verification at each phase.
 **BEFORE any other work, prepare the git branch:**
 
 1. Check the current branch: `git branch --show-current`
-2. If NOT on `main`, switch: `git checkout main`
-3. Pull latest: `git pull origin main`
-4. Create feature branch: `git checkout -b issue-{number}-{brief-description}` (or `feature/{description}` if no issue number)
+2. Guard against losing work before switching:
+   - `git status --porcelain` — if non-empty, STOP and ask the user what to do with the uncommitted changes. Never stash silently.
+   - If the current branch is not `main`, check for committed-but-unpushed work: `git log --oneline @{upstream}..` (or any commits at all if the branch has no upstream). If there are any, STOP and tell the user which branch would be left behind.
+3. If NOT on `main`, switch: `git checkout main`
+4. Pull latest: `git pull origin main`
+5. Create feature branch: `git checkout -b issue-{number}-{brief-description}` (or `feature/{description}` if no issue number)
 
 ---
 
