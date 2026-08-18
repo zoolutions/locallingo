@@ -1,0 +1,19 @@
+.claude/commands/lfg.md
+  s_f6879d3422bd16::t_2cd79faa65695a 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2b89a1ea098739fd9388364fd5552b3decae5160",
+  "prompts": {},
+  "sessions": {
+    "s_f6879d3422bd16": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ea5607f-a748-4b48-9833-cdc62afc1c32",
+        "model": "claude-fable-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
