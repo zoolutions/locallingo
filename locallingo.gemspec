@@ -47,8 +47,11 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 3.2"
 
   # Provider-agnostic LLM client — routes translation and quality-review calls to
-  # OpenAI/Anthropic/Google/... chosen by `.locallingo.yml`.
-  s.add_dependency "ruby_llm", ">= 1.0", "< 2"
+  # OpenAI/Anthropic/Google/... chosen by `.locallingo.yml`. 2.x is allowed:
+  # the gem only touches RubyLLM's stable chat API (RubyLLM.chat /
+  # with_instructions / ask) and respond_to?-guarded config key accessors —
+  # no acts_as, no legacy callbacks.
+  s.add_dependency "ruby_llm", ">= 1.0", "< 3"
   # Flat YAML locale IO is done by the gem itself; i18n-tasks is invoked (via the
   # `after_translate` hooks) for normalization, so it is NOT a hard runtime dep —
   # the host app already carries it. Left out on purpose.

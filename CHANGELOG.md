@@ -6,6 +6,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Changed
+- Allow `ruby_llm` 2.x (dependency constraint widened from `< 2` to `< 3`). The
+  gem only uses RubyLLM's stable chat API and guarded config accessors, so a
+  host app can take the RubyLLM 2.0 bump without waiting on Locallingo.
+
 ### Fixed
 - State files are written with a trailing final newline, so the output is
   POSIX-conformant and files that already end with a newline are no longer
