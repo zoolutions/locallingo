@@ -1,6 +1,6 @@
 # Publish locallingo to RubyGems on a GitHub release, via trusted publishing
 # (OIDC) — no API key stored anywhere. Requires a one-time trusted-publisher
-# registration on rubygems.org (repo: mhenrixon/locallingo, workflow: release.yml,
+# registration on rubygems.org (repo: zoolutions/locallingo, workflow: release.yml,
 # environment: rubygems) and a GitHub Actions environment named `rubygems`.
 #
 # Flow: verify the tag matches the gem version -> build + verify contents ->
