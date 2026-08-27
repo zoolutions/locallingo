@@ -2,7 +2,7 @@ source "https://rubygems.org"
 
 # docs-kit shared docs chrome + its runtime deps. Pinned to a released version so
 # a docs-kit change can't silently reshape this site on the next bundle.
-gem "docs-kit", "~> 1.0.8", require: "docs_kit"
+gem "docs-kit", "~> 1.1", ">= 1.1.1", require: "docs_kit"
 gem "daisyui", require: "daisy_ui"
 gem "phlex-rails"
 gem "rails_icons", "~> 1.1"
