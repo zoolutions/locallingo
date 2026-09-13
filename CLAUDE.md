@@ -3,6 +3,14 @@
 AI-assisted i18n translation, drift detection, and quality linting on top of
 i18n-tasks — packaged as a gem (ships the `lingo` CLI).
 
+## Memory
+
+Durable project memory lives in `lode/` (index: `lode/lode-map.md`). Read it
+before exploring the code. `lode/review/` holds accepted review findings as
+rules about the system; `/lode:gate` enforces them before any push, and
+`/lode:learn` adds to them. `lode/workflow.md` is the repo profile the shared
+`/lode:*` workflow skills read.
+
 ## Tech Stack
 
 - **Ruby**: >= 3.2 (CI matrix: 3.2, 3.3, 3.4)
@@ -40,18 +48,25 @@ rake release[x.y.z]        # Release (version bump + tag + push) — maintainer 
 
 | Command | Purpose |
 |---------|---------|
-| `/lfg` | Full autonomous workflow: branch → understand → explore → plan → TDD → verify → PR |
-| `/plan` | Fable-powered planning → GitHub issue or `docs/plans/` markdown (read-only; execute with `/lfg`) |
-| `/github-review-comments` | Process unresolved PR review comments |
-| `/github-review-failures` | Diagnose and fix failing CI checks on a PR |
-| `/github-review-pr` | Full PR review: conflicts → CI failures → review comments |
-| `/review-pr` | Review a PR for pattern compliance |
-| `/tdd` | Enforce RED → GREEN → REFACTOR cycle |
+| `/lode:lfg` | Full autonomous workflow: branch → understand → explore → plan → TDD → verify → gate → PR |
+| `/lode:plan` | Read-only planning → GitHub issue (execute with `/lode:lfg`) |
+| `/lode:tdd` | Enforce RED → GREEN → REFACTOR |
+| `/lode:review-pr` | Full PR pass: conflicts → CI failures → review comments |
+| `/lode:finish-prs` | Drive a stack of open PRs to merge-ready, one at a time |
+| `/lode:debug-flaky` | Root-cause an intermittent test — evidence → repro → fix |
+| `/lode:gate` | Pre-PR gate: fresh-context review against the rules and `lode/review/`, looped until clean |
+| `/lode:learn` | Write accepted review findings into `lode/review/` |
+| `/lode:sync` | Keep `lode/` true to the code after a change |
+| `/review-pr` | Quick local review of a PR for pattern compliance |
 | `/security` | Security audit (API keys, shell hooks, state/file handling) |
 
-Commands pin a model tier via frontmatter aliases: `sonnet` for pattern-following
-implementation, `opus` for orchestration and full PR review, `fable` for
-read-only planning (`/plan`). Use aliases, not full model IDs.
+The `/lode:*` commands come from the `lode@zoolutions` plugin
+(`.claude/settings.json`); they read `lode/workflow.md` for this repository's
+commands, branch rules, input shapes, CI facts and conflict rules.
+
+The two local commands pin a model tier via frontmatter aliases — `opus` for
+both, since review and security audits are judgment work. Use aliases, not full
+model IDs.
 
 ## Architecture
 
@@ -84,9 +99,12 @@ RuboCop      lib/rubocop/cop/locallingo/ (RelativeI18nKey, StrftimeInView), conf
 
 ## More Documentation
 
+See `lode/lode-map.md` first — the index of this repository's durable memory.
+
 See `.claude/` directory:
-- `commands/` — Slash command definitions
+- `commands/` — the two local slash commands (`review-pr`, `security`)
 - `rules/` — Coding style, git workflow, testing, agents
+- `settings.json` — enables the `lode@zoolutions` plugin
 
 See `docs/` for the published documentation site (own bundle — excluded from the
 gem's rubocop task; don't run root `bundle exec rubocop` against it).
