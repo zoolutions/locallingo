@@ -14,19 +14,18 @@ schema_version = 1
 
 [filters.rake]
 filter_stderr = true
-description = "bundle exec rake / rake rubocop: this repo's Rakefile wraps rspec (forced to --format documentation by .rspec) and rubocop in a rake task, which the built-in rspec/rubocop rewrites don't catch since the invoked command is `rake`, not `rspec`/`rubocop`. Drops the raw ruby/rspec invocation line, the restated seed, timings, the coverage report path, and rubocop's per-file progress boilerplate — never touches an example description, a failure block, or a count."
+description = "bundle exec rake / rake rubocop: this repo's Rakefile wraps rspec (forced to --format documentation by .rspec) and rubocop in a rake task, which the built-in rspec/rubocop rewrites don't catch since the invoked command is `rake`, not `rspec`/`rubocop`. Drops the raw ruby/rspec invocation line, timings, the coverage report path, and rubocop's per-file progress boilerplate — never touches an example description, a failure block, or a count."
 match_command = "^(?:bundle\\s+exec\\s+)?rake\\b"
 strip_lines_matching = [
   "^\\s*$",
   "^\\S+ -I\\S.*--pattern spec/",
-  "^Randomized with seed \\d+$",
   "^Finished in .*$",
   "^Coverage report generated for RSpec to ",
   "^Running RuboCop\\.\\.\\.$",
   "^Inspecting \\d+ files?$",
   "^[.CWEF]+$",
 ]
-on_empty = "rake: ok"
+on_empty = "rake: no output left after filtering (check the exit code)"
 
 [[tests.rake]]
 name = "clean rspec + rubocop run keeps every example line, group headers and both summaries"
@@ -53,11 +52,13 @@ Inspecting 40 files
 
 40 files inspected, no offenses detected
 """
-expected = """Locallingo::StateStore
+expected = """Randomized with seed 3811
+Locallingo::StateStore
   #save
     does not rewrite a file that already ends with a trailing newline
     rewrites when content changed
 101 examples, 0 failures
+Randomized with seed 3811
 Line Coverage: 87.08% (876 / 1006)
 40 files inspected, no offenses detected"""
 
@@ -89,7 +90,8 @@ rspec ./spec/zzz_temp_fail_spec.rb:2 # temp failure demo fails on purpose
 
 Randomized with seed 64272
 """
-expected = """temp failure demo
+expected = """Randomized with seed 64272
+temp failure demo
   passes
   fails on purpose (FAILED - 1)
 Failures:
@@ -101,7 +103,8 @@ Failures:
      # ./spec/zzz_temp_fail_spec.rb:3:in 'block (2 levels) in <top (required)>'
 2 examples, 1 failure
 Failed examples:
-rspec ./spec/zzz_temp_fail_spec.rb:2 # temp failure demo fails on purpose"""
+rspec ./spec/zzz_temp_fail_spec.rb:2 # temp failure demo fails on purpose
+Randomized with seed 64272"""
 
 [[tests.rake]]
 name = "rubocop offenses survive untouched"
