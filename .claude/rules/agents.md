@@ -4,9 +4,12 @@
 
 | Agent | Purpose | When to Use |
 |-------|---------|-------------|
-| Explore | Codebase exploration | Finding files, understanding patterns |
-| Plan | Implementation planning | Complex features, architectural decisions |
-| general-purpose | Multi-step tasks | Research, complex searches |
+| Explore (`model: haiku`) | Codebase exploration | Finding files, understanding patterns |
+| Plan (`model: sonnet`) | Implementation planning | Complex features, architectural decisions |
+| general-purpose (`model: sonnet`) | Multi-step tasks | Research, complex searches |
+| `fable-validator` (`model: fable`, pinned) | Final validation | A finished change, before its pull request opens |
+
+Every spawned agent names its `model:`; one that does not runs on `sonnet` (`CLAUDE_CODE_SUBAGENT_MODEL` in `.claude/settings.json`).
 
 ## Immediate Agent Usage
 
@@ -34,7 +37,7 @@ First explore, wait, then check patterns, wait, then review...
 
 ## When to Use Explore Agent
 
-Use the Explore agent (subagent_type=Explore) instead of direct Glob/Grep when:
+Use the Explore agent (subagent_type=Explore, `model: haiku`) instead of direct Glob/Grep when:
 - Open-ended codebase exploration
 - Searching for patterns across CLI, manager, state, validator, and quality layers
 - Answering questions about codebase structure
