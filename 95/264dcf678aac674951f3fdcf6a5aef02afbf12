@@ -1,0 +1,29 @@
+docs/Gemfile
+  s_ce673376b1fabf::t_725ae8b9e16444 5,22
+docs/AGENTS.md
+  s_ce673376b1fabf::t_f803caa754e65a 69-71
+docs/config/initializers/docs_kit.rb
+  s_ce673376b1fabf::t_f803caa754e65a 3
+docs/package.json
+  s_ce673376b1fabf::t_f803caa754e65a 8-10
+docs/Dockerfile
+  s_ce673376b1fabf::t_f803caa754e65a 11
+docs/.gitignore
+  s_ce673376b1fabf::t_f803caa754e65a 36-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "95264dcf678aac674951f3fdcf6a5aef02afbf12",
+  "prompts": {},
+  "sessions": {
+    "s_ce673376b1fabf": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "7286e743-f25b-48ba-947c-43c58e221a29",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
