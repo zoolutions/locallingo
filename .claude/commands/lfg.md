@@ -115,7 +115,7 @@ Write the MINIMUM code to make the test pass. Follow project patterns:
 
 | Never Do | Always Do |
 |----------|-----------|
-| Bump `version.rb` in a PR | Leave versioning to `rake release[x.y.z]` |
+| Bump `version.rb` in a PR | Leave versioning to `bin/release` |
 | Silently reset corrupted state | Raise `Locallingo::Error` with an actionable message |
 | Drop `manual` flags on sync | Preserve hand-edit protection through every rewrite |
 | Rewrite unchanged state files | Skip byte-identical writes (diff hygiene) |

@@ -17,7 +17,7 @@ i18n-tasks — packaged as a gem (ships the `lingo` CLI).
 ## Critical Rules
 
 ### Never Do
-1. **NO version bumps in PRs** — `rake release[x.y.z]` owns `version.rb`; PRs must not touch it
+1. **NO version bumps in PRs** — `bin/release` (→ `rake release[x.y.z]`) owns `version.rb`; PRs must not touch it
 2. **NO storing or logging API keys** — keys come from ENV, `Locallingo.configure`, or `RubyLLM.configure`; never persist them
 3. **NO dropping `manual` flags from state** — sync is non-destructive; hand-edit protection must survive every state rewrite
 4. **NO rewriting unchanged state files** — `StateStore#save` skips byte-identical files so diffs stay small; keep it that way
@@ -33,10 +33,10 @@ i18n-tasks — packaged as a gem (ships the `lingo` CLI).
 
 ```bash
 bundle exec rspec          # Run tests
-bundle exec rake rubocop   # Lint (scoped to exe/lib/spec/Rakefile/Gemfile/gemspec)
+bundle exec rake rubocop   # Lint (scoped to exe/lib/spec/rakelib/Rakefile/Gemfile/gemspec)
 bundle exec rake           # Both — this is what CI runs
 bundle exec rake build     # Build gem and verify contents
-rake release[x.y.z]        # Release (version bump + tag + push) — maintainer only
+bin/release                # Release (version bump + tag + push via rake release[x.y.z]) — maintainer only
 ```
 
 Command output is condensed by rtk (PreToolUse hook). `.rtk/filters.toml` covers this repo's

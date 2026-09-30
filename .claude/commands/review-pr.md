@@ -20,7 +20,7 @@ Review PR for pattern compliance and issues. Be concise.
 
 ```ruby
 # WRONG -> RIGHT
-Version bump in version.rb          -> Remove; rake release[x.y.z] owns it
+Version bump in version.rb          -> Remove; bin/release owns it
 Silently resetting corrupted state  -> Raise Locallingo::Error
 Dropping manual flags on sync       -> Preserve hand-edit protection
 Rewriting unchanged state files     -> Skip byte-identical writes

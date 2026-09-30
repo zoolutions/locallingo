@@ -50,7 +50,7 @@ bundle exec rspec <relevant_specs>  # Tests
 
 - **NEVER** commit directly to `main`
 - **NEVER** force push to shared branches
-- **NEVER** touch `lib/locallingo/version.rb` in a PR — `rake release[x.y.z]` owns the version bump
+- **NEVER** touch `lib/locallingo/version.rb` in a PR — `bin/release` (→ `rake release[x.y.z]`, the zoolutions release kit) owns the version bump
 - **ALWAYS** run validators before committing
 - **ALWAYS** write meaningful commit messages
 - Keep commits small and focused
