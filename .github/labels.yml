@@ -29,7 +29,7 @@ labels:
     description: Refactoring or cleanup that pays down an accepted shortcut
     group: type
   - name: security
-    color: e9e257
+    color: "e9e257"
     description: Vulnerability, hardening, or an authorization correctness fix
     group: type
   - name: documentation
@@ -88,7 +88,7 @@ labels:
     description: Has a /plan body with Context, Decision, Steps and Gates; ready for /lfg
     group: status
   - name: epic
-    color: 5319e7
+    color: "5319e7"
     description: Umbrella item tracking several smaller issues
     group: status
   - name: blocker
@@ -119,7 +119,7 @@ labels:
     description: This issue or pull request already exists
     group: community
   - name: invalid
-    color: e4e669
+    color: "e4e669"
     description: This doesn't seem right
     group: community
   - name: wontfix
@@ -141,12 +141,17 @@ paths:
   "lib/locallingo/{quality,validators}/**/*": quality
   "lib/rubocop/**/*": rubocop
   "lib/locallingo/rubocop.rb": rubocop
+  "spec/locallingo/{cli,manager,reporter,settings,configuration}_spec.rb": cli
+  "spec/locallingo/providers/**/*": translation
+  "spec/locallingo/json_extraction_spec.rb": translation
+  "spec/locallingo/{state_store,key_flattener}_spec.rb": state
+  "spec/locallingo/quality_checker_spec.rb": quality
+  "spec/rubocop/**/*": rubocop
   ".github/**/*": devops
   "bin/release": devops
   "rakelib/**/*": devops
-  "Dockerfile*": devops
+  "**/Dockerfile*": devops
   ".claude/**/*": dx
   "{AGENTS,CLAUDE}.md": dx
   "bin/labels": dx
-  "lode/**/*": dx
   "docs/**/*": docs-site
