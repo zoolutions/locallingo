@@ -20,6 +20,9 @@ Style/StringLiterals:
   EnforcedStyle: double_quotes
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+  Exclude:
+    # bin/labels is the zoolutions labels kit, byte-identical across repos; see docs-kit LABELS_KIT.md
+    - "bin/labels"
 
 # rubocop is a gemspec DEVELOPMENT dependency on purpose: `locallingo/rubocop`
 # requires it lazily (never a runtime dep), and pinning it there lets the gem's
