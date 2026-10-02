@@ -145,7 +145,7 @@ paths:
   "spec/locallingo/providers/**/*": translation
   "spec/locallingo/json_extraction_spec.rb": translation
   "spec/locallingo/{state_store,key_flattener}_spec.rb": state
-  "spec/locallingo/quality_checker_spec.rb": quality
+  "spec/locallingo/{quality,validators}_*_spec.rb": quality
   "spec/rubocop/**/*": rubocop
   ".github/**/*": devops
   "bin/release": devops
