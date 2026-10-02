@@ -91,6 +91,16 @@ RuboCop      lib/rubocop/cop/locallingo/ (RelativeI18nKey, StrftimeInView), conf
 - Mock the LLM provider — specs must never make network calls
 - CI runs `bundle exec rake` on multiple Ruby versions; both rspec and rubocop must pass
 
+## Labels
+
+Every pull request carries exactly one `type` label and at least one `area`
+label from `.github/labels.yml` — never a `status` label. `/plan` labels the
+issue, `/lfg` copies the issue's labels onto the PR (or infers them:
+`bin/labels infer $(git diff --name-only origin/main...HEAD)`). Labels change in
+the manifest and reach GitHub with `bin/labels sync`, never through the UI.
+Rules: `.github/LABELS.md`. `bin/labels` + `.github/LABELS.md` are the shared
+labels kit (canonical copy in docs-kit): never edit them in place.
+
 ## More Documentation
 
 See `.claude/` directory:

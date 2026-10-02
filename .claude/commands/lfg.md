@@ -2,7 +2,7 @@
 description: "Executes full autonomous engineering workflow with verification. Use when implementing complete features, tackling GitHub issues, or running end-to-end development cycles."
 model: opus
 argument-hint: "GitHub issue number/URL or feature description"
-allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr create:*), Bash(gh pr view:*), Bash(bundle exec:*), Bash(git:*), Read, Write, Edit, Glob, Grep, Agent
+allowed-tools: Bash(gh issue view:*), Bash(gh search:*), Bash(gh issue list:*), Bash(gh pr create:*), Bash(gh pr edit:*), Bash(gh pr view:*), Bash(bin/labels infer:*), Bash(bin/labels sync), Bash(bundle exec:*), Bash(git:*), Read, Write, Edit, Glob, Grep, Agent
 ---
 
 # LFG - Full Autonomous Workflow
@@ -34,6 +34,8 @@ gh issue view <number> --json title,body,labels,assignees,comments
 ```
 
 If `$ARGUMENTS` is a description, use it directly.
+
+**Keep the issue's `type` and `area` labels** — Phase 7 puts them on the pull request. `/lfg` never edits the issue's own labels; the issue's lifecycle is the user's to manage. A `docs/plans/*.md` plan carries them on its `Labels:` line. If there are none, or you were given a description, infer them: one `type` label plus `bin/labels infer <changed paths>` for the areas (`.github/LABELS.md`).
 
 ### Step 2: Define Acceptance Criteria
 
@@ -252,7 +254,7 @@ EOF
 ```bash
 git push -u origin $(git branch --show-current)
 
-gh pr create --title "feat(scope): brief description" --body "$(cat <<'EOF'
+gh pr create --title "feat(scope): brief description" --label <type> --label <area> [--label <area>…] --body "$(cat <<'EOF'
 ## Summary
 - Key change 1 touching `lib/foo.rb`
 - Key change 2
@@ -272,6 +274,8 @@ EOF
 )"
 ```
 
+**Label the PR — every time.** The `--label` flags are the issue's `type` + `area` labels from Phase 1, never a `status` label (`plan`, `epic`, …). For a description-only run, infer them: one `type` (`.github/LABELS.md` maps conventional-commit prefixes to types) plus `bin/labels infer $(git diff --name-only origin/main...HEAD)`. Exactly one type, at least one area. `gh pr create` fails on a label that doesn't exist on GitHub: run `bin/labels sync` (or label after the fact with `gh pr edit <n> --add-label …`).
+
 **Markdown inside the quoted heredoc is literal — do not escape.** The single-quoted `<<'EOF'` delimiter disables shell expansion on the body, so:
 
 - Write backticks as backticks: `` `foo` ``. Do NOT write `\`foo\``; that writes a literal backslash-backtick and breaks the code span.
@@ -287,7 +291,7 @@ cat > /tmp/pr-body.md << 'EOF'
 ## Summary
 ...any markdown...
 EOF
-gh pr create --title "..." --body-file /tmp/pr-body.md
+gh pr create --title "..." --label <type> --label <area> --body-file /tmp/pr-body.md
 rm /tmp/pr-body.md
 ```
 
@@ -319,6 +323,7 @@ The tests prove the CODE is right; this phase keeps the USER's mental model righ
 - [ ] Backwards compatibility maintained (config, state files, CLI flags)
 - [ ] No version bump included
 - [ ] PR created with description
+- [ ] PR labelled: one `type` + at least one `area`, no `status` (`.github/LABELS.md`)
 - [ ] PR body ends with `## Deviations & judgment calls` (from implementation-notes.md, since deleted)
 - [ ] Comprehension close-out delivered (decisions + three merge-gate questions)
 
