@@ -11,7 +11,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   language ("into natural, idiomatic German") instead of a word-for-word
   translation: the meaning, phrasing and UI conventions a native speaker would
   use, with idioms replaced by their local equivalent. Only newly translated or
-  outdated keys are affected; run `lingo translate --force` to redo the rest.
+  outdated keys are affected; run `lingo translate --force` to redo all
+  non-manual keys (hand-edited `manual` keys stay untouched — redo those one at
+  a time with `--force-key` and compare).
   The source language is now named too (`en` → "English").
 - The translation prompt no longer hardcodes "Use formal business language".
   Register (formal "Sie"/"Lei" vs. informal "du"/"tu") belongs in each
