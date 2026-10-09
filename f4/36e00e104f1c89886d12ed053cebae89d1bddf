@@ -1,0 +1,25 @@
+lib/locallingo/validators/duplicate_values.rb
+  s_f4f2a882982c1f::t_dc1d11b975e05f 15-17,33
+lib/locallingo/manager.rb
+  s_f4f2a882982c1f::t_b0669cbf29315e 73-75
+spec/locallingo/manager_spec.rb
+  s_f4f2a882982c1f::t_4634e3ee2d56b3 43-60
+CHANGELOG.md
+  s_f4f2a882982c1f::t_4ed5ea41d08ed6 72-73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "f436e00e104f1c89886d12ed053cebae89d1bddf",
+  "prompts": {},
+  "sessions": {
+    "s_f4f2a882982c1f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "10162f6d-de74-4848-8a40-f52ea3fa72c7",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
