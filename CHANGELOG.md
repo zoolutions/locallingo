@@ -6,7 +6,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `lingo quality --prefix yoga.` checks only the keys under a prefix, in both
+  the static checks and the AI pass. A prefix that matches nothing exits `1`. (#10, #29)
+- `lingo quality --key a.b` (repeatable) checks exactly the named keys, and the
+  AI pass reviews every named key without sampling. An unknown key exits `1`;
+  `--key` and `--prefix` cannot be combined. (#10, #29)
+- `quality.sample_size` (default `100`) sets how many keys `quality --ai`
+  samples. (#10, #29)
+- `lingo translate --include-manual` lets `--force-key` overwrite keys flagged
+  `manual`; each overwritten key is named on stderr and its `manual` flag
+  survives. (#11, #30)
+
 ### Changed
+- `lingo translate --force-key` skips keys flagged `manual` (hand-edited, via
+  `accept-edits`) and names each skipped key on stderr, the same protection
+  `--force` already gave. If every named key is manual, nothing is translated.
+  Pass `--include-manual` to overwrite them as before. (#11, #30)
+- The translation prompt asks for natural, idiomatic text in the target
+  language ("into natural, idiomatic German") instead of a word-for-word
+  translation: the meaning, phrasing and UI conventions a native speaker would
+  use, with idioms replaced by their local equivalent. Only newly translated or
+  outdated keys are affected; run `lingo translate --force` to redo all
+  non-manual keys (hand-edited `manual` keys stay untouched — redo those one at
+  a time with `--force-key <key> --include-manual` and compare).
+  The source language is now named too (`en` → "English").
+- The translation prompt no longer hardcodes "Use formal business language".
+  Register (formal "Sie"/"Lei" vs. informal "du"/"tu") belongs in each
+  locale's `language_guides` entry; add it there to keep a formal tone.
 - `lingo translate` exits `1` when any key fails to translate, and prints
   `⚠️ Translation finished: N keys failed` with the failed keys instead of
   `✅ Translation complete!`. Translated keys are still written and the
@@ -22,6 +49,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   above its minimum length (~1024 tokens); shorter prompts are sent uncached.
 
 ### Fixed
+- `lingo quality --ai` includes the locale's `language_guides` entry in the
+  review prompt, as `translate` does, so the AI pass can flag violations of the
+  guide (e.g. du/Sie register). (#9, #29)
 - One invalid value in a model reply (e.g. typographic quotes returned as
   unescaped `"`) no longer fails every key in its batch. A reply that cannot be
   parsed is never resent as-is: the batch is split in half, down to single keys,

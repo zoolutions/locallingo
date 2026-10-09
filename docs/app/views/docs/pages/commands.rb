@@ -38,8 +38,9 @@ class Views::Docs::Pages::Commands < DocsUI::Page
 
         - `--locale de` limits to one locale.
         - `--force` re-translates everything (respecting protected manual edits).
-        - `--force-key a.b.c` re-translates specific keys — including
-          manual-flagged ones, whose `manual` flag survives the rewrite.
+        - `--force-key a.b.c` re-translates specific keys. Manual-flagged keys
+          are skipped and named on stderr; add `--include-manual` to overwrite
+          them (their `manual` flag survives the rewrite).
         - `--dry-run` shows the plan without writing.
 
         On success it runs the configured `after_translate` hooks. Requires
@@ -64,6 +65,8 @@ class Views::Docs::Pages::Commands < DocsUI::Page
       md <<~'MD'
         `quality` lints a locale's text (defaults to the source locale) with the
         static rules, terminology list, and — with `--ai` — an LLM review pass.
+        `--prefix yoga.` scopes it to one namespace; `--key a.b.c` (repeatable)
+        to exact keys.
         `fix-quality` rewrites the auto-fixable suggestions (universal fixes and
         British spellings) back into the locale files, preserving case; add
         `--dry-run` to preview. See [Quality linting](/docs/quality).

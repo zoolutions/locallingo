@@ -8,6 +8,7 @@ class Views::Docs::Pages::PromptGlossary < DocsUI::Page
   def lead = "Tune what the model knows about your product so translations read right."
 
   def content
+    idiomatic
     context_section
     glossary
     placeholders
@@ -15,6 +16,20 @@ class Views::Docs::Pages::PromptGlossary < DocsUI::Page
   end
 
   private
+
+  def idiomatic
+    DocsUI::Section("Idiomatic by default") do
+      md <<~'MD'
+        Every translation prompt asks for natural, idiomatic text in the target
+        language — what a native speaker would actually write in your UI — not a
+        word-for-word rendering of the source. The model is told to use the target
+        language's own phrasing and software conventions, swap idioms for their
+        local equivalent, and avoid calques, without adding or dropping
+        information. Register is not hardcoded: set formal or informal address
+        per locale in `language_guides` below.
+      MD
+    end
+  end
 
   def context_section
     DocsUI::Section("Context") do
@@ -63,7 +78,8 @@ class Views::Docs::Pages::PromptGlossary < DocsUI::Page
   def guides
     DocsUI::Section("Per-language style guides") do
       md <<~'MD'
-        `language_guides` appends extra guidance per target locale — formality,
+        `language_guides` appends extra guidance per target locale to both the
+        translation prompt and the `quality --ai` review prompt — formality,
         compound-noun rules, number formatting, quotation marks. A value is inline
         text or a `file:` path (read relative to the config's base path), so long
         guides can live in their own Markdown file.

@@ -55,6 +55,7 @@ module Locallingo
     def translate_model = dig("translate", "model")
     def batch_size = dig("translate", "batch_size")
     def quality_model = dig("quality", "model")
+    def quality_sample_size = dig("quality", "sample_size")
     def british_spellings? = !!dig("quality", "british_spellings")
     def terminology_setting = dig("quality", "terminology")
 
@@ -99,7 +100,7 @@ module Locallingo
     def after_translate = Array(data.fetch("after_translate", []))
 
     BUILTIN_LANGUAGE_NAMES = {
-      "de" => "German", "sv" => "Swedish", "fr" => "French",
+      "en" => "English", "de" => "German", "sv" => "Swedish", "fr" => "French",
       "af" => "Afrikaans", "es" => "Spanish", "it" => "Italian",
       "nl" => "Dutch", "pt" => "Portuguese", "da" => "Danish",
       "nb" => "Norwegian", "no" => "Norwegian", "fi" => "Finnish"

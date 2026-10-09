@@ -100,9 +100,11 @@ With no `packages:`, the whole app uses `defaults` — the common case.
 lingo status                       # translation status per locale
 lingo translate --locale de        # translate missing/changed keys
 lingo translate --force            # re-translate everything
+lingo translate --force-key a.b.c  # re-translate one key (skips manual; add --include-manual)
 lingo validate --strict            # CI gate (exit 1 on strict-tier issues)
 lingo validate --strict-all        # stricter CI gate
 lingo quality --ai                 # quality linting (+ optional AI pass)
+lingo quality --ai --prefix yoga.  # lint one namespace
 lingo fix-quality --locale en      # auto-fix fixable issues
 lingo accept-edits --locale de     # protect hand-edited translations (drifted keys only)
 lingo accept-edits --key a.b.c     # protect a specific key

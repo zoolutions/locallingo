@@ -260,14 +260,22 @@ module Locallingo
     end
 
     def translation_prompt(locale)
+      language = config.language_name(locale)
       <<~PROMPT
-        Translate the following texts from #{config.language_name(config.source_locale)} to #{config.language_name(locale)}.
+        Translate the following texts from #{config.language_name(config.source_locale)} into natural, idiomatic #{language}.
         This is for #{config.context}.
+
+        ## Idiomatic Translation
+        - Translate the meaning, not word for word: write what a native #{language} speaker would actually say in this situation
+        - Use the phrasing, word order and UI conventions that are standard in #{language} software, even when they differ from the source
+        - Replace source-language idioms and set phrases with their natural #{language} equivalent instead of translating them literally
+        - Avoid calques and anglicisms when an established #{language} expression exists
+        - Never add, drop or change information to make a sentence sound natural
+        - Terminology and any language guide below take precedence over these style rules
 
         ## General Rules
         - Preserve placeholders like #{config.placeholder_style} exactly as they appear
         - Preserve HTML tags if present
-        - Use formal business language
         - Keep translations concise - UI space is limited
         - Escape every double quote (") inside a translated value as \\" so the reply stays valid JSON
         - Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source

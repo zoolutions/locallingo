@@ -42,6 +42,7 @@ class Views::Docs::Pages::ConfigurationReference < DocsUI::Page
         | `translate.batch_size` | `20` | Keys per translation request |
         | `quality.model` | `gpt-4o-mini` | Model for the AI quality pass |
         | `quality.british_spellings` | `false` | Flag en-only American→British drift |
+        | `quality.sample_size` | `100` | How many keys `quality --ai` samples per run |
         | `quality.terminology` | `business` | `business`, `banking`, `none`, or a path to a YAML list |
       MD
     end
@@ -55,7 +56,7 @@ class Views::Docs::Pages::ConfigurationReference < DocsUI::Page
         | `context` | `"a business application"` | One-phrase product/domain description |
         | `placeholder_style` | `"%<name>s, %<count>s"` | Interpolation syntax to preserve |
         | `glossary` | `{}` | Domain terms the model must not paraphrase |
-        | `language_guides` | `{}` | Per-locale guidance (inline text or `file:` path) |
+        | `language_guides` | `{}` | Per-locale guidance for the translation and AI quality prompts (inline text or `file:` path) |
       MD
     end
   end
