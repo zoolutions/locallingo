@@ -35,6 +35,27 @@ RSpec.describe Locallingo::CLI do
   describe "translate" do
     before { stub_const("Locallingo::BatchTranslator::BASE_SLEEP_DURATION", 0) }
 
+    it "--force-key skips manual keys unless --include-manual is passed" do
+      state = { "greeting.hi" => { "source_hash" => "stale000", "target_hash" => "abc", "manual" => true } }
+      with_app(config: { "target_locales" => %w[de], "after_translate" => [] }, locales:) do |root|
+        write_state(root, "greeting.de.json", state)
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        _out, err, = run_cli(root, %w[translate --force-key greeting.hi])
+        expect(err).to include("greeting.hi", "--include-manual")
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml")).fetch("de").fetch("greeting")
+        expect(de["hi"]).to eq("Hallo")
+        expect(de).not_to have_key("bye") # no fallback to the missing keys
+
+        _out, err, code = run_cli(root, %w[translate --force-key greeting.hi --include-manual])
+        expect(code).to eq(0)
+        expect(err).to include("greeting.hi")
+        expect(YAML.load_file(File.join(root, "config/locales/greeting.de.yml")).dig("de", "greeting", "hi"))
+          .to eq("DE:Hello")
+        expect(read_state(root, "greeting.de.json").dig("greeting.hi", "manual")).to be(true)
+      end
+    end
+
     it "prints success and exits 0 when every key is translated" do
       with_app(config: { "target_locales" => %w[de], "after_translate" => [] }, locales:) do |root|
         stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }

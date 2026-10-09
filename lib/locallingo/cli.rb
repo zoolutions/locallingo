@@ -99,16 +99,23 @@ module Locallingo
       @options
     end
 
+    def add_force_options(opts)
+      opts.on("-f", "--force", "Force re-translation of all keys") { @options[:force] = true }
+      opts.on("--force-key KEY", "Force re-translation of a specific key") do |v|
+        (@options[:force_keys] ||= []) << v
+      end
+      opts.on("--include-manual", "translate: let --force-key overwrite manual (hand-edited) keys") do
+        @options[:include_manual] = true
+      end
+    end
+
     def build_parser
       OptionParser.new do |opts|
         opts.banner = "Usage: #{CLI_NAME} <command> [options]\n\nCommands:\n  " \
                       "#{COMMANDS.keys.join(", ")}\n\nOptions:"
 
         opts.on("-l", "--locale LOCALE", "Process specific locale") { |v| @options[:locale] = v }
-        opts.on("-f", "--force", "Force re-translation of all keys") { @options[:force] = true }
-        opts.on("--force-key KEY", "Force re-translation of a specific key") do |v|
-          (@options[:force_keys] ||= []) << v
-        end
+        add_force_options(opts)
         opts.on("--key KEY", "accept-edits, quality: act on a specific key (repeatable)") do |v|
           (@options[:keys] ||= []) << v
         end
@@ -163,7 +170,8 @@ module Locallingo
       mgr = manager(config, options)
       puts "🔄 Translating..." if options[:verbose]
       failed = mgr.translate!(locale: options[:locale], force: options[:force],
-                              force_keys: options[:force_keys] || [])
+                              force_keys: options[:force_keys] || [],
+                              include_manual: options.fetch(:include_manual, false))
       unless options[:dry_run]
         puts "📝 Running post-translate hooks..."
         mgr.run_after_translate_hooks
