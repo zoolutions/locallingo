@@ -190,6 +190,26 @@ RSpec.describe Locallingo::Manager do
     end
   end
 
+  describe "#translate! prompt" do
+    { "de" => "German", "it" => "Italian", "sv" => "Swedish" }.each do |locale, language|
+      it "asks for idiomatic #{language} rather than a word-for-word translation" do
+        with_app(config: { "target_locales" => [locale] }, locales: { "en" => { "g" => { "a" => "A" } } }) do |root|
+          prompt = nil
+          stub_llm_chat do |payload:, instructions:, **|
+            prompt = instructions
+            payload.transform_values { |v| "#{locale}:#{v}" }
+          end
+
+          described_class.new(config: config_for(root)).translate!(locale:)
+
+          expect(prompt).to include("from English into natural, idiomatic #{language}")
+          expect(prompt).to include("native #{language} speaker")
+          expect(prompt).to include("not word for word")
+        end
+      end
+    end
+  end
+
   describe "#source_hash" do
     it "is stable across calls and changes when source changes" do
       with_app(config: {}, locales: { "en" => { "g" => { "h" => "Hi" } } }) do |root|
