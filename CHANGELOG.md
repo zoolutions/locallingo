@@ -14,9 +14,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Appending `|| true` restores the old always-`0` behaviour, but also hides
   every other failure (missing credentials, a broken config). (#25)
 - `Manager#translate!` returns `{ locale => failed_keys }`. (#25)
-- Allow `ruby_llm` 2.x (dependency constraint widened from `< 2` to `< 3`). The
-  gem only uses RubyLLM's stable chat API and guarded config accessors, so a
-  host app can take the RubyLLM 2.0 bump without waiting on Locallingo.
+- Require `ruby_llm` >= 2.1 (constraint is now `>= 2.1, < 3`; host apps pinned
+  to RubyLLM 1.x or 2.0 must bump). The translation and quality-review system
+  prompts are marked as prompt cache boundaries; the translation prompt is
+  reused by every batch of a locale, so providers with prompt caching
+  (Anthropic, OpenAI-compatible) bill that repeated prefix at the cached rate. Anthropic only caches prompts
+  above its minimum length (~1024 tokens); shorter prompts are sent uncached.
 
 ### Fixed
 - One invalid value in a model reply (e.g. typographic quotes returned as
