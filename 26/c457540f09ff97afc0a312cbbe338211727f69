@@ -1,0 +1,51 @@
+spec/locallingo/configuration_spec.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 96-109
+docs/app/views/docs/pages/configuration_reference.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 45,59
+config/locallingo.default.yml
+  s_88577216e04e16::t_c9f0a88c02cdcb 32-34,47-48
+docs/app/views/docs/pages/prompt_glossary.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 11,20-33,81-82
+lib/locallingo/manager.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 263,265,268-275
+spec/locallingo/quality_checker_spec.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 101-192
+lib/locallingo/cli.rb
+  ai_agent 119,130,140-146,204-208
+docs/app/views/docs/pages/cli.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 49-52
+docs/app/views/docs/pages/quality.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 32-33,83-88
+docs/app/views/docs/pages/commands.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 41-43,68-69
+CHANGELOG.md
+  s_88577216e04e16::t_c9f0a88c02cdcb 9-20,22-36,52-54
+docs/app/views/docs/pages/drift_state.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 72-74
+README.md
+  s_88577216e04e16::t_c9f0a88c02cdcb 103,107
+spec/locallingo/cli_spec.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 118-162
+lib/locallingo/configuration.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 58,103
+lib/locallingo/quality_checker.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 34-37,39,42,121-138,140,176,197-199
+spec/locallingo/manager_spec.rb
+  s_88577216e04e16::t_c9f0a88c02cdcb 193-216
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "26c457540f09ff97afc0a312cbbe338211727f69",
+  "prompts": {},
+  "sessions": {
+    "s_88577216e04e16": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d57ff2ef-0d25-49c6-9b6b-8cbc06d214bc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
