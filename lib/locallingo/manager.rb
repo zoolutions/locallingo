@@ -70,7 +70,9 @@ module Locallingo
       violations = []
       source = load_source_translations
 
-      violations.concat(Validators::DuplicateValues.new.call(source:)) if config.validator_enabled?(:duplicate_values)
+      if config.validator_enabled?(:duplicate_values)
+        violations.concat(Validators::DuplicateValues.new.call(source:, locale: config.source_locale))
+      end
 
       config.target_locales.each do |locale|
         target = load_locale_translations(locale)

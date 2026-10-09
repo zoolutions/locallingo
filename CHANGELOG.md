@@ -69,6 +69,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   through `translate` or `accept-edits`) get a baseline and the `manual_edits`
   validator can watch them. An existing `target_hash` is still never
   recomputed — that would silently absorb hand-edit drift.
+- The `duplicate_values` validator reports findings under the configured
+  `source_locale` instead of a hard-coded `en`. (#15)
 
 ### Fixed (0.4.0)
 - `lingo sync` no longer destroys hand-edit protection: it now only refreshes
