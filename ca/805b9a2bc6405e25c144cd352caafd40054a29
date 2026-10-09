@@ -1,0 +1,45 @@
+lib/locallingo/json_extraction.rb
+  s_58d7c913ca1218::t_3550196b5e35c1 27,29,31,50-58
+spec/locallingo/cli_spec.rb
+  s_58d7c913ca1218::t_c4a6cef5cac041 35,37-38,40-74
+  s_58d7c913ca1218::t_8d5febfbd00f12 36
+  s_58d7c913ca1218::t_3550196b5e35c1 39
+spec/locallingo/batch_translator_spec.rb
+  s_58d7c913ca1218::t_8d5febfbd00f12 1-5,8-10,12-86
+CHANGELOG.md
+  s_58d7c913ca1218::t_7cc19808e5e6d2 10-15,21-28
+lib/locallingo/batch_translator.rb
+  s_58d7c913ca1218::t_6c993ede96e83f 1-128
+lib/locallingo.rb
+  s_58d7c913ca1218::t_ba76b07a2e2f90 10
+lib/locallingo/cli.rb
+  s_58d7c913ca1218::t_0c1b1272847276 158-159,164-179
+docs/app/views/docs/pages/providers.rb
+  s_58d7c913ca1218::t_7cc19808e5e6d2 111-113
+docs/app/views/docs/pages/cli.rb
+  s_58d7c913ca1218::t_7cc19808e5e6d2 84-93
+spec/locallingo/manager_spec.rb
+  s_58d7c913ca1218::t_8d5febfbd00f12 141,148
+  s_58d7c913ca1218::t_0011c17601216c 137-140,142-147,149-192
+spec/locallingo/json_extraction_spec.rb
+  s_58d7c913ca1218::t_392c35b96f04e4 31-47
+lib/locallingo/manager.rb
+  s_58d7c913ca1218::t_0c1b1272847276 91-92,99-101,233,247,260-261
+  s_58d7c913ca1218::t_ba76b07a2e2f90 12,29-31,175-180,237
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "ca805b9a2bc6405e25c144cd352caafd40054a29",
+  "prompts": {},
+  "sessions": {
+    "s_58d7c913ca1218": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "377ca475-c390-40b1-8f07-da4ff829b393",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
