@@ -32,6 +32,46 @@ RSpec.describe Locallingo::CLI do
     }
   end
 
+  describe "translate" do
+    before { stub_const("Locallingo::BatchTranslator::BASE_SLEEP_DURATION", 0) }
+
+    it "prints success and exits 0 when every key is translated" do
+      with_app(config: { "target_locales" => %w[de], "after_translate" => [] }, locales:) do |root|
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        out, _err, code = run_cli(root, %w[translate])
+
+        expect(out).to include("✅ Translation complete!")
+        expect(code).to eq(0)
+      end
+    end
+
+    it "prints the failed count, still runs hooks, and exits 1 when keys fail" do
+      with_app(config: { "target_locales" => %w[de], "after_translate" => ["touch hook-ran"] }, locales:) do |root|
+        stub_llm_chat { |**| raise JSON::ParserError, "unexpected token" }
+
+        out, _err, code = run_cli(root, %w[translate])
+
+        expect(out).to include("⚠️ Translation finished: 1 key failed")
+        expect(out).to include("greeting.bye")
+        expect(out).not_to include("✅")
+        expect(File).to exist(File.join(root, "hook-ran"))
+        expect(code).to eq(1)
+      end
+    end
+
+    it "reports failures but exits 0 on --dry-run" do
+      with_app(config: { "target_locales" => %w[de] }, locales:) do |root|
+        stub_llm_chat { |**| raise JSON::ParserError, "unexpected token" }
+
+        out, _err, code = run_cli(root, %w[translate --dry-run])
+
+        expect(out).to include("1 key failed")
+        expect(code).to eq(0)
+      end
+    end
+  end
+
   describe "validate" do
     it "reports missing keys and exits 1 under --strict" do
       with_app(config: { "target_locales" => %w[de] }, locales:) do |root|

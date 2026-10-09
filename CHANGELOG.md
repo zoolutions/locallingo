@@ -7,11 +7,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- `lingo translate` exits `1` when any key fails to translate, and prints
+  `⚠️ Translation finished: N keys failed` with the failed keys instead of
+  `✅ Translation complete!`. Translated keys are still written and the
+  `after_translate` hooks still run; `--dry-run` reports failures but exits `0`.
+  To keep the old always-`0` behaviour, append `|| true`. (#25)
+- `Manager#translate!` returns `{ locale => failed_keys }`. (#25)
 - Allow `ruby_llm` 2.x (dependency constraint widened from `< 2` to `< 3`). The
   gem only uses RubyLLM's stable chat API and guarded config accessors, so a
   host app can take the RubyLLM 2.0 bump without waiting on Locallingo.
 
 ### Fixed
+- One invalid value in a model reply (e.g. typographic quotes returned as
+  unescaped `"`) no longer fails every key in its batch. A reply that cannot be
+  parsed is never resent as-is: the batch is split in half, down to single keys,
+  so only the bad key fails. Transport errors still retry with backoff. (#25)
+- When a ```json fence holds invalid JSON, the parse error now names the line
+  and column inside the fence instead of the fence at line 1. (#25)
+- The translation prompt asks the model to escape `"` inside values as `\"`
+  and keep typographic quotes (“ ” „ ‚ « ») as they appear in the source. (#25)
 - State files are written with a trailing final newline, so the output is
   POSIX-conformant and files that already end with a newline are no longer
   rewritten with newline-only diffs. One-time effect after upgrading: each

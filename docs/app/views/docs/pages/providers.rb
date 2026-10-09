@@ -108,7 +108,9 @@ class Views::Docs::Pages::Providers < DocsUI::Page
       md <<~'MD'
         - `translate.model` does the bulk translation work — favour a fast,
           inexpensive model, since it runs over every missing/changed key in
-          batches (`translate.batch_size`, default 20).
+          batches (`translate.batch_size`, default 20). If a reply is not valid
+          JSON, the batch is split in half and retried, down to single keys, so one
+          bad value fails only its own key.
         - `quality.model` powers the optional AI review of existing translations —
           a stronger model pays off here because it runs on a sample, not the whole
           corpus.

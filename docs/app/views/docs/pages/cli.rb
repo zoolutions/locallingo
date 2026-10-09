@@ -81,10 +81,16 @@ class Views::Docs::Pages::Cli < DocsUI::Page
   def exit_codes
     DocsUI::Section("Exit codes") do
       md <<~'MD'
-        `validate` is the only command that sets a failing exit code, and only
-        under `--strict` / `--strict-all`. It returns `1` when any violation whose
-        type is listed in the matching `strict` tier is present, and `0`
-        otherwise — so it slots straight into a CI step.
+        `validate` sets a failing exit code only under `--strict` /
+        `--strict-all`. It returns `1` when any violation whose type is listed in
+        the matching `strict` tier is present, and `0` otherwise — so it slots
+        straight into a CI step.
+
+        `translate` returns `1` when any key could not be translated: it prints
+        `⚠️ Translation finished: N keys failed` and lists them. The keys that
+        were translated are still written and the `after_translate` hooks still
+        run. Under `--dry-run` failures are reported but the exit code stays `0`.
+        To keep the old always-`0` behaviour, append `|| true`.
       MD
     end
   end
