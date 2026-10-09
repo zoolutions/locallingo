@@ -93,6 +93,20 @@ RSpec.describe Locallingo::Configuration do
     end
   end
 
+  describe "#quality_sample_size" do
+    it "defaults to 100" do
+      with_app(locales: {}, config: {}) do |root|
+        expect(config_for(root).quality_sample_size).to eq(100)
+      end
+    end
+
+    it "reads quality.sample_size" do
+      with_app(locales: {}, config: { "quality" => { "sample_size" => 250 } }) do |root|
+        expect(config_for(root).quality_sample_size).to eq(250)
+      end
+    end
+  end
+
   describe "#strict_types" do
     it "returns the configured symbols per tier" do
       with_app(locales: {}, config: {}) do |root|

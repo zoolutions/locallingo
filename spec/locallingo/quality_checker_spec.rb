@@ -98,5 +98,97 @@ RSpec.describe Locallingo::QualityChecker do
         expect(result.first).to include(key: "ui.a", source: :ai, severity: :warning, issue: "too terse")
       end
     end
+
+    it "includes the locale's language guide in the AI review prompt" do
+      with_app(
+        config: { "language_guides" => { "de" => "Use du-form for yoga.*, Sie-form elsewhere." } },
+        locales: { "de" => { "yoga" => { "a" => "Atme ein" } } }
+      ) do |root|
+        prompts = []
+        stub_llm_chat do |instructions:, **|
+          prompts << instructions
+          {}
+        end
+        checker_for(root).check(locale: "de", use_ai: true)
+        expect(prompts.first).to include("Use du-form for yoga.*, Sie-form elsewhere.")
+      end
+    end
+
+    it "omits other locales' language guides from the AI review prompt" do
+      with_app(
+        config: { "language_guides" => { "sv" => "Swedish-only rule" } },
+        locales: { "de" => { "yoga" => { "a" => "Atme ein" } } }
+      ) do |root|
+        prompts = []
+        stub_llm_chat do |instructions:, **|
+          prompts << instructions
+          {}
+        end
+        checker_for(root).check(locale: "de", use_ai: true)
+        expect(prompts.first).not_to include("Swedish-only rule")
+      end
+    end
+
+    it "samples at most quality.sample_size keys" do
+      keys = (1..5).to_h { |i| ["k#{i}", "Text #{i}"] }
+      with_app(config: { "quality" => { "sample_size" => 2 } }, locales: { "en" => { "ui" => keys } }) do |root|
+        payloads = []
+        stub_llm_chat do |payload:, **|
+          payloads << payload
+          {}
+        end
+        checker_for(root).check(locale: "en", use_ai: true)
+        expect(payloads.first.size).to eq(2)
+      end
+    end
+  end
+
+  describe "#check with keys:" do
+    it "sends every named key to the AI pass, unsampled" do
+      keys = (1..5).to_h { |i| ["k#{i}", "Text #{i}"] }
+      with_app(config: { "quality" => { "sample_size" => 1 } }, locales: { "en" => { "ui" => keys } }) do |root|
+        payloads = []
+        stub_llm_chat do |payload:, **|
+          payloads << payload
+          {}
+        end
+        checker_for(root).check(locale: "en", use_ai: true, keys: %w[ui.k1 ui.k3 ui.k5])
+        expect(payloads.first.keys).to eq(%w[ui.k1 ui.k3 ui.k5])
+      end
+    end
+  end
+
+  describe "#check with prefix:" do
+    let(:locales) do
+      { "en" => { "yoga" => { "a" => "Click here to breathe", "b" => "Stretch" },
+                  "ui" => { "c" => "Click here to continue" } } }
+    end
+
+    it "scopes the static checks to keys under the prefix" do
+      with_app(locales:) do |root|
+        keys = checker_for(root).check(locale: "en", prefix: "yoga.").map { |s| s[:key] }
+        expect(keys).to include("yoga.a")
+        expect(keys).not_to include("ui.c")
+      end
+    end
+
+    it "sends only keys under the prefix to the AI pass" do
+      with_app(locales:) do |root|
+        payloads = []
+        stub_llm_chat do |payload:, **|
+          payloads << payload
+          {}
+        end
+        checker_for(root).check(locale: "en", use_ai: true, prefix: "yoga.")
+        expect(payloads.first.keys).to contain_exactly("yoga.a", "yoga.b")
+      end
+    end
+
+    it "raises when no key matches the prefix" do
+      with_app(locales:) do |root|
+        expect { checker_for(root).check(locale: "en", prefix: "nope.") }
+          .to raise_error(Locallingo::Error, /No keys match prefix "nope\." in en/)
+      end
+    end
   end
 end

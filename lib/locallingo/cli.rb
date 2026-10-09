@@ -109,7 +109,7 @@ module Locallingo
         opts.on("--force-key KEY", "Force re-translation of a specific key") do |v|
           (@options[:force_keys] ||= []) << v
         end
-        opts.on("--key KEY", "accept-edits: accept a specific key (repeatable)") do |v|
+        opts.on("--key KEY", "accept-edits, quality: act on a specific key (repeatable)") do |v|
           (@options[:keys] ||= []) << v
         end
         opts.on("--all", "accept-edits: mark every translated key as manual") { @options[:all] = true }
@@ -120,13 +120,20 @@ module Locallingo
           @options[:strict] = true
           @options[:strict_all] = true
         end
-        opts.on("--ai", "Use AI for quality suggestions") { @options[:use_ai] = true }
+        quality_options(opts)
         opts.on("--json", "Output in JSON format") { @options[:format] = :json }
         opts.on("--package PATH", "Scope to a package from .locallingo.yml") { |v| @options[:package] = v }
         opts.on("-h", "--help", "Show this help") do
           puts opts
           exit 0
         end
+      end
+    end
+
+    def quality_options(opts)
+      opts.on("--ai", "Use AI for quality suggestions") { @options[:use_ai] = true }
+      opts.on("--prefix PREFIX", "quality: check only keys starting with PREFIX (e.g. yoga.)") do |v|
+        @options[:prefix] = v
       end
     end
 
@@ -186,7 +193,11 @@ module Locallingo
 
     def cmd_quality(config, options, reporter)
       locale = options[:locale] || config.source_locale
-      suggestions = quality_checker(config, options).check(locale:, use_ai: options[:use_ai])
+      raise Error, "--key and --prefix cannot be combined" if options[:keys] && options[:prefix]
+
+      suggestions = quality_checker(config, options).check(
+        locale:, use_ai: options[:use_ai], prefix: options[:prefix], keys: options[:keys]
+      )
       reporter.quality(suggestions, locale:)
     end
 
