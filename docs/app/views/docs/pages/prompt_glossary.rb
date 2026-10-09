@@ -78,7 +78,8 @@ class Views::Docs::Pages::PromptGlossary < DocsUI::Page
   def guides
     DocsUI::Section("Per-language style guides") do
       md <<~'MD'
-        `language_guides` appends extra guidance per target locale — formality,
+        `language_guides` appends extra guidance per target locale to both the
+        translation prompt and the `quality --ai` review prompt — formality,
         compound-noun rules, number formatting, quotation marks. A value is inline
         text or a `file:` path (read relative to the config's base path), so long
         guides can live in their own Markdown file.

@@ -29,6 +29,8 @@ class Views::Docs::Pages::Quality < DocsUI::Page
         bin/lingo quality                 # lint the source locale
         bin/lingo quality --locale de     # lint a target locale
         bin/lingo quality --ai            # add an AI review pass
+        bin/lingo quality --ai --locale de --prefix yoga.   # one namespace
+        bin/lingo quality --ai --key yoga.intro --key yoga.outro  # exact keys
       BASH
     end
   end
@@ -78,7 +80,12 @@ class Views::Docs::Pages::Quality < DocsUI::Page
         `--ai` samples the locale and asks your `quality.model` to suggest
         improvements for clarity, professionalism, and friendliness, each tagged
         with a severity. It samples rather than reviewing everything, to keep the
-        cost bounded. Needs provider credentials; without them it warns and skips.
+        cost bounded: `quality.sample_size` keys (default 100), drawn from the
+        `--prefix` scope when given. Keys named with `--key` are all reviewed.
+        The prompt includes your `context`, `glossary`, and the locale's
+        `language_guides` entry, so the review checks the same style rules the
+        translation followed. Needs provider credentials; without them it warns
+        and skips.
       MD
     end
   end
