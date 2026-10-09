@@ -1,0 +1,23 @@
+CHANGELOG.md
+  s_cf4b386e8f43b2::t_c846f9d64e12e1 16-18
+docs/app/views/docs/pages/prompt_glossary.rb
+  s_cf4b386e8f43b2::t_6afd91fbfa20a0 28-29
+spec/locallingo/manager_spec.rb
+  s_cf4b386e8f43b2::t_c75633e327fef2 211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "1516954f3b142c02bb11dd14c67eb4bc4a102165",
+  "prompts": {},
+  "sessions": {
+    "s_cf4b386e8f43b2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "001b79ae-6479-49da-936c-9ef6d66aa7dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
