@@ -13,6 +13,10 @@ module Locallingo
     # truth) so independent batches don't share conversation history. The
     # response is parsed with the robust JsonExtraction extractor because not
     # every provider guarantees fenceless JSON.
+    #
+    # The system prompt is built once per locale and reused by every batch, so
+    # it is marked as a prompt cache boundary: providers that support caching
+    # (Anthropic, OpenAI-compatible) bill the repeated prefix at the cached rate.
     class RubyLLM
       # Maps a RubyLLM provider symbol to the ENV var whose presence indicates
       # credentials are available, so we can fail fast with a clear message
@@ -62,7 +66,7 @@ module Locallingo
           model:,
           provider:,
           assume_model_exists: true
-        ).with_instructions(instructions)
+        ).with_instructions(instructions, cache_until_here: true)
 
         response = conversation.ask(JSON.pretty_generate(payload))
         JsonExtraction.extract_object(response.content)

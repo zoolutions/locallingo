@@ -51,7 +51,7 @@ Gem::Specification.new do |s|
   # the gem only touches RubyLLM's stable chat API (RubyLLM.chat /
   # with_instructions / ask) and respond_to?-guarded config key accessors —
   # no acts_as, no legacy callbacks.
-  s.add_dependency "ruby_llm", ">= 1.0", "< 3"
+  s.add_dependency "ruby_llm", ">= 2.1", "< 3"
   # Flat YAML locale IO is done by the gem itself; i18n-tasks is invoked (via the
   # `after_translate` hooks) for normalization, so it is NOT a hard runtime dep —
   # the host app already carries it. Left out on purpose.

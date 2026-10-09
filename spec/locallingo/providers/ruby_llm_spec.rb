@@ -75,6 +75,12 @@ RSpec.describe Locallingo::Providers::RubyLLM do
       provider.chat(model: "claude-x", instructions: "translate", payload: { "greeting" => "hello" })
     end
 
+    it "marks the system prompt as a prompt cache boundary" do
+      chat!
+
+      expect(conversation).to have_received(:with_instructions).with("translate", cache_until_here: true)
+    end
+
     it "configures the provider API key from ENV before chatting" do
       RubyLLM.config.anthropic_api_key = nil
       stub_const("ENV", ENV.to_h.merge("ANTHROPIC_API_KEY" => "env-key-123"))
