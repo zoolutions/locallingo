@@ -29,6 +29,9 @@ defaults:
 
   quality:
     model: gpt-4o-mini
+    # How many randomly sampled keys `quality --ai` sends for review per run
+    # (`--key` reviews every named key instead).
+    sample_size: 100
     # Flag en-only British-vs-American spelling drift (organization -> organisation).
     british_spellings: false
     # Named built-in terminology list ("business" | "banking" | "none"), or a
@@ -41,7 +44,8 @@ defaults:
   context: "a business application"
   placeholder_style: "%<name>s, %<count>s"
   glossary: {}
-  # Extra per-locale style guidance appended to the translation prompt. Value is
+  # Extra per-locale style guidance appended to the translation and AI quality
+  # review prompts. Value is
   # inline text or `file: path/to/guide.md`.
   language_guides: {}
 

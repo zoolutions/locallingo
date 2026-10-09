@@ -94,6 +94,51 @@ RSpec.describe Locallingo::CLI do
     end
   end
 
+  describe "quality" do
+    let(:quality_locales) do
+      { "en" => { "yoga" => { "a" => "Click here to breathe", "b" => "Stretch and stuff", "d" => "Sorry, oops" },
+                  "ui" => { "c" => "Click here to continue" } } }
+    end
+
+    it "scopes the check to --prefix" do
+      with_app(locales: quality_locales) do |root|
+        out, _err, code = run_cli(root, %w[quality --prefix yoga. --json])
+
+        keys = JSON.parse(out).map { |s| s["key"] }
+        expect(keys).to include("yoga.a")
+        expect(keys).not_to include("ui.c")
+        expect(code).to eq(0)
+      end
+    end
+
+    it "checks only the keys named by repeated --key" do
+      with_app(locales: quality_locales) do |root|
+        out, _err, code = run_cli(root, %w[quality --key ui.c --key yoga.b --json])
+
+        expect(JSON.parse(out).map { |s| s["key"] }.uniq).to contain_exactly("ui.c", "yoga.b")
+        expect(code).to eq(0)
+      end
+    end
+
+    it "fails naming the keys --key could not find" do
+      with_app(locales: quality_locales) do |root|
+        _out, err, code = run_cli(root, %w[quality --key ui.c --key ui.missing])
+
+        expect(err).to include("ui.missing")
+        expect(code).to eq(1)
+      end
+    end
+
+    it "rejects --key combined with --prefix" do
+      with_app(locales: quality_locales) do |root|
+        _out, err, code = run_cli(root, %w[quality --key ui.c --prefix yoga.])
+
+        expect(err).to include("--key and --prefix")
+        expect(code).to eq(1)
+      end
+    end
+  end
+
   describe "legacy flag aliases" do
     it "accepts --validate, warns deprecation, and behaves like `validate`" do
       with_app(config: { "target_locales" => %w[de] }, locales:) do |root|

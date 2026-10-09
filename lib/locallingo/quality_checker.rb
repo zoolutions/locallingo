@@ -31,13 +31,15 @@ module Locallingo
       @terminology = Quality::Terminology.new(@config.terminology_setting, base_path: @config.base_path)
     end
 
-    # Check all translations for a locale.
-    def check(locale: nil, use_ai: false)
+    # Check the translations for a locale: all of them, those under +prefix+
+    # (e.g. "yoga."), or exactly the named +keys+. The AI pass reviews a sample
+    # of up to `quality.sample_size` keys, or every named key.
+    def check(locale: nil, use_ai: false, prefix: nil, keys: nil)
       locale ||= config.source_locale
-      translations = load_locale_translations(locale)
+      translations = scoped_translations(locale, prefix:, keys:)
 
       suggestions = translations.flat_map { |key, text| check_text(key, text, locale) }
-      suggestions.concat(ai_sample(translations, locale)) if use_ai
+      suggestions.concat(keys ? suggest_improvements(translations, locale) : ai_sample(translations, locale)) if use_ai
       suggestions
     end
 
@@ -116,8 +118,26 @@ module Locallingo
       }
     end
 
+    def scoped_translations(locale, prefix:, keys:)
+      translations = load_locale_translations(locale)
+      return slice_keys(translations, keys, locale) if keys
+      return translations unless prefix
+
+      scoped = translations.select { |key, _| key.start_with?(prefix) }
+      raise Error, "No keys match prefix #{prefix.inspect} in #{locale}" if scoped.empty?
+
+      scoped
+    end
+
+    def slice_keys(translations, keys, locale)
+      missing = keys - translations.keys
+      raise Error, "quality: key(s) not found in #{locale}: #{missing.join(", ")}" if missing.any?
+
+      translations.slice(*keys)
+    end
+
     def ai_sample(translations, locale)
-      sample_size = [translations.size, 100].min
+      sample_size = [translations.size, config.quality_sample_size].min
       sample = translations.to_a.sample(sample_size).to_h
       suggest_improvements(sample, locale)
     end
@@ -153,7 +173,7 @@ module Locallingo
       <<~PROMPT
         Review these UI translations for #{config.context}.
         Suggest improvements for clarity, professionalism, and user-friendliness.
-        #{glossary_section}
+        #{glossary_section}#{language_guide_section(locale)}
         For each translation that needs improvement, provide:
         1. The issue (brief)
         2. Suggested improvement
@@ -172,6 +192,11 @@ module Locallingo
 
       lines = config.glossary.map { |term, meaning| "        - \"#{term}\" = #{meaning}" }
       "\n#{config.context} terminology:\n#{lines.join("\n")}\n"
+    end
+
+    def language_guide_section(locale)
+      guide = config.language_guide(locale)
+      guide.empty? ? "" : "\n#{guide}\n"
     end
 
     def load_locale_translations(locale)
