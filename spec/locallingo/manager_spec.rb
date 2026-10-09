@@ -134,6 +134,62 @@ RSpec.describe Locallingo::Manager do
     end
   end
 
+  describe "#translate! with unparseable or failing replies" do
+    let(:keys) { %w[a b c d e f g h] }
+    let(:locales) { { "en" => { "g" => keys.to_h { |k| [k, "Text #{k}"] } } } }
+
+    before { stub_const("Locallingo::BatchTranslator::BASE_SLEEP_DURATION", 0) }
+
+    def de_values(root)
+      file = File.join(root, "config/locales/g.de.yml")
+      File.exist?(file) ? YAML.load_file(file).dig("de", "g") : {}
+    end
+
+    it "fails only the key whose reply cannot be parsed, writes the rest, and returns the failures" do
+      with_app(config: { "target_locales" => %w[de], "translate" => { "batch_size" => 20 } }, locales:) do |root|
+        calls = []
+        stub_llm_chat do |payload:, **|
+          calls << payload.keys
+          raise JSON::ParserError, "unexpected token" if payload.key?("g.c")
+
+          payload.transform_values { |v| "DE:#{v}" }
+        end
+
+        failed = described_class.new(config: config_for(root)).translate!(locale: "de")
+
+        expect(failed).to eq("de" => ["g.c"])
+        expect(de_values(root).keys).to match_array(keys - ["c"])
+        # 8 → 4 → 2 → 1: one call per level for each half, never the same payload twice.
+        expect(calls.size).to eq(7)
+        expect(calls.uniq.size).to eq(calls.size)
+      end
+    end
+
+    it "returns an empty failure list for a locale with nothing to translate" do
+      with_app(config: { "target_locales" => %w[de] },
+               locales: { "en" => { "g" => { "a" => "A" } }, "de" => { "g" => { "a" => "A-de" } } }) do |root|
+        stub_llm_chat { |**| raise "must not be called" }
+
+        expect(described_class.new(config: config_for(root)).translate!).to eq("de" => [])
+      end
+    end
+
+    it "asks the model to escape double quotes and keep typographic quotes" do
+      with_app(config: { "target_locales" => %w[de] }, locales: { "en" => { "g" => { "a" => "A" } } }) do |root|
+        prompt = nil
+        stub_llm_chat do |payload:, instructions:, **|
+          prompt = instructions
+          payload.transform_values { |v| "DE:#{v}" }
+        end
+
+        described_class.new(config: config_for(root)).translate!(locale: "de")
+
+        expect(prompt).to include('\\"')
+        expect(prompt).to include("“ ” „ ‚ « »")
+      end
+    end
+  end
+
   describe "#source_hash" do
     it "is stable across calls and changes when source changes" do
       with_app(config: {}, locales: { "en" => { "g" => { "h" => "Hi" } } }) do |root|

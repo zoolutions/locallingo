@@ -28,6 +28,23 @@ RSpec.describe Locallingo::JsonExtraction do
         .to raise_error(JSON::ParserError, /top-level JSON object/)
     end
 
+    it "names the parse error inside a complete fence, not the fence itself" do
+      content = <<~TEXT
+        ```json
+        {
+          "app.greeting": "Hallo",
+          "app.quoted": ""%{name}" ist der Liste beigetreten"
+        }
+        ```
+      TEXT
+
+      expect { described_class.extract_object(content) }.to raise_error(JSON::ParserError) { |error|
+        expect(error.message).to include("%{name}")
+        expect(error.message).to include("inside the fenced block")
+        expect(error.message).not_to include("```")
+      }
+    end
+
     it "raises when no JSON object can be recovered" do
       expect { described_class.extract_object("no json here at all") }
         .to raise_error(JSON::ParserError)

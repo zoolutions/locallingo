@@ -24,10 +24,11 @@ module Locallingo
     def extract_object(content)
       text = content.to_s.strip
 
+      fenced = fenced_block(text)
       parsed = try_parse(text) ||
-               try_parse(fenced_block(text)) ||
+               try_parse(fenced) ||
                first_balanced_object(text) ||
-               JSON.parse(text) # final attempt; raises with a useful message
+               raise_parse_error(text, fenced)
 
       # Both callers treat the result as a key->value Hash, so reject a
       # top-level array (or any non-object) here with a clear contract error
@@ -44,6 +45,17 @@ module Locallingo
       JSON.parse(candidate)
     rescue JSON::ParserError
       nil
+    end
+
+    # Raise the most useful parse error. A complete fence that fails to parse
+    # holds the real fault (e.g. an unescaped quote inside a value); parsing the
+    # raw text would only report the fence itself at line 1.
+    def raise_parse_error(text, fenced)
+      JSON.parse(fenced || text)
+    rescue JSON::ParserError => e
+      raise e unless fenced
+
+      raise JSON::ParserError, "#{e.message} (inside the fenced block)"
     end
 
     def fenced_block(text)

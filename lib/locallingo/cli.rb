@@ -155,13 +155,28 @@ module Locallingo
     def cmd_translate(config, options)
       mgr = manager(config, options)
       puts "🔄 Translating..." if options[:verbose]
-      mgr.translate!(locale: options[:locale], force: options[:force], force_keys: options[:force_keys] || [])
+      failed = mgr.translate!(locale: options[:locale], force: options[:force],
+                              force_keys: options[:force_keys] || [])
       unless options[:dry_run]
         puts "📝 Running post-translate hooks..."
         mgr.run_after_translate_hooks
       end
-      puts "✅ Translation complete!"
-      puts "(dry run - no changes made)" if options[:dry_run]
+      report_translated(failed, dry_run: options[:dry_run])
+    end
+
+    # Hooks have already run for the keys that were written; a failed key still
+    # fails the run (outside --dry-run) so CI does not ship missing translations.
+    def report_translated(failed, dry_run:)
+      count = failed.values.sum(&:size)
+      if count.zero?
+        puts "✅ Translation complete!"
+      else
+        puts "⚠️ Translation finished: #{count} #{count == 1 ? "key" : "keys"} failed " \
+             "(re-run with -v for details)"
+        failed.each { |locale, keys| keys.each { |key| puts "  - #{locale}: #{key}" } }
+      end
+      puts "(dry run - no changes made)" if dry_run
+      exit 1 if count.positive? && !dry_run
     end
 
     def cmd_validate(config, options, reporter)

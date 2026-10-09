@@ -9,6 +9,7 @@ require_relative "configuration"
 require_relative "key_flattener"
 require_relative "state_store"
 require_relative "providers/ruby_llm"
+require_relative "batch_translator"
 require_relative "validators/missing"
 require_relative "validators/outdated"
 require_relative "validators/duplicate_values"
@@ -25,9 +26,9 @@ module Locallingo
   # Everything app-specific (locales, provider/model, prompt context/glossary,
   # per-language guides, which validators run) comes from the Configuration.
   class Manager
-    MAX_RETRIES = 3
-    MAX_MISSING_RETRIES = 2
-    BASE_SLEEP_DURATION = 1.0
+    MAX_RETRIES = BatchTranslator::MAX_RETRIES
+    MAX_MISSING_RETRIES = BatchTranslator::MAX_MISSING_RETRIES
+    BASE_SLEEP_DURATION = BatchTranslator::BASE_SLEEP_DURATION
 
     attr_reader :config, :dry_run, :verbose, :logger, :cli_name
 
@@ -87,14 +88,17 @@ module Locallingo
       violations
     end
 
-    # Translate missing/changed keys for one or all target locales.
+    # Translate missing/changed keys for one or all target locales. Returns
+    # `{ locale => failed_keys }`; keys that failed are not written.
     def translate!(locale: nil, force: false, force_keys: [])
       @provider.ensure_credentials!
 
       locales_to_process = locale ? [locale] : config.target_locales
       source = load_source_translations
 
-      locales_to_process.each { |target_locale| translate_locale(source, target_locale, force:, force_keys:) }
+      locales_to_process.to_h do |target_locale|
+        [target_locale, translate_locale(source, target_locale, force:, force_keys:)]
+      end
     end
 
     # Mark hand-edited target values as intentional (source_hash + target_hash +
@@ -168,6 +172,12 @@ module Locallingo
     def missing_validator = @missing_validator ||= Validators::Missing.new(cli_name:)
     def outdated_validator = @outdated_validator ||= Validators::Outdated.new(cli_name:)
 
+    def batch_translator
+      @batch_translator ||= BatchTranslator.new(
+        provider: @provider, model: config.translate_model, batch_size: config.batch_size, log: method(:log)
+      )
+    end
+
     def sync_locale_state(source, locale)
       target = load_locale_translations(locale)
       locale_state = @state.load(locale)
@@ -220,11 +230,11 @@ module Locallingo
       keys = determine_keys_to_translate(source, target, locale_state, force:, force_keys:, exceptions:)
       if keys.empty?
         log("  No keys to translate for #{target_locale}")
-        return
+        return []
       end
 
       log("  Translating #{keys.size} keys...")
-      translated, failed = translate_with_missing_retries(source, keys, target_locale)
+      translated, failed = batch_translator.call(source, keys, instructions: translation_prompt(target_locale))
 
       successful = translated.except(*failed)
       unless dry_run
@@ -234,70 +244,7 @@ module Locallingo
       end
 
       log("  Completed #{target_locale}: #{successful.size} translated, #{failed.size} failed")
-    end
-
-    def translate_with_missing_retries(source, keys, target_locale)
-      translated, failed = translate_keys(source, keys, target_locale)
-
-      round = 0
-      while failed.any? && round < MAX_MISSING_RETRIES
-        round += 1
-        log("  Retry round #{round}: #{failed.size} keys remaining...")
-        sleep(BASE_SLEEP_DURATION * (2**round))
-        retried, failed = translate_keys(source, failed, target_locale)
-        translated.merge!(retried)
-      end
-
-      if failed.any?
-        log("  WARNING: #{failed.size} keys failed after all retries:", level: :warn)
-        failed.each { |key| log("    - #{key}", level: :warn) }
-      end
-
-      [translated, failed]
-    end
-
-    def translate_keys(source, keys, target_locale)
-      translations = {}
-      failed = []
-
-      keys.each_slice(config.batch_size) do |batch|
-        result = translate_batch(batch.to_h { |key| [key, source[key]] }, target_locale)
-        batch.each do |key|
-          if result.key?(key) && !result[key].to_s.empty?
-            translations[key] = result[key]
-          else
-            failed << key
-          end
-        end
-        sleep(BASE_SLEEP_DURATION)
-      end
-
-      [translations, failed]
-    end
-
-    def translate_batch(payload, target_locale)
-      return {} if payload.empty?
-
-      retries = 0
-      begin
-        result = @provider.chat(
-          model: config.translate_model,
-          instructions: translation_prompt(target_locale),
-          payload:
-        )
-        log("  Batch translated: #{result.keys.size}/#{payload.keys.size} keys")
-        result
-      rescue StandardError => e
-        retries += 1
-        if retries < MAX_RETRIES
-          sleep_duration = BASE_SLEEP_DURATION * (2**retries)
-          log("  Batch failed (attempt #{retries}), retrying in #{sleep_duration}s: #{e.message}", level: :warn)
-          sleep(sleep_duration)
-          retry
-        end
-        log("  Translation batch failed after #{MAX_RETRIES} retries: #{e.message}", level: :error)
-        {}
-      end
+      failed
     end
 
     def translation_prompt(locale)
@@ -310,6 +257,8 @@ module Locallingo
         - Preserve HTML tags if present
         - Use formal business language
         - Keep translations concise - UI space is limited
+        - Escape every double quote (") inside a translated value as \\" so the reply stays valid JSON
+        - Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source
         #{glossary_section}#{language_guide_section(locale)}
         Return ONLY a raw JSON object mapping each input key to its translation,
         with no surrounding prose and no markdown code fences:
