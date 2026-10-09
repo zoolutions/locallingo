@@ -259,6 +259,7 @@ module Locallingo
         - Replace source-language idioms and set phrases with their natural #{language} equivalent instead of translating them literally
         - Avoid calques and anglicisms when an established #{language} expression exists
         - Never add, drop or change information to make a sentence sound natural
+        - Terminology and any language guide below take precedence over these style rules
 
         ## General Rules
         - Preserve placeholders like #{config.placeholder_style} exactly as they appear

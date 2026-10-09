@@ -205,6 +205,9 @@ RSpec.describe Locallingo::Manager do
           expect(prompt).to include("from English into natural, idiomatic #{language}")
           expect(prompt).to include("native #{language} speaker")
           expect(prompt).to include("not word for word")
+          expect(prompt).to include("Avoid calques")
+          expect(prompt).to include("Never add, drop or change information")
+          expect(prompt).to include("Terminology and any language guide below take precedence")
         end
       end
     end
