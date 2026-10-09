@@ -90,14 +90,17 @@ module Locallingo
 
     # Translate missing/changed keys for one or all target locales. Returns
     # `{ locale => failed_keys }`; keys that failed are not written.
-    def translate!(locale: nil, force: false, force_keys: [])
+    #
+    # Manual (hand-edited) keys are skipped by `force` and `force_keys`;
+    # `include_manual` lets the named `force_keys` overwrite them anyway.
+    def translate!(locale: nil, force: false, force_keys: [], include_manual: false)
       @provider.ensure_credentials!
 
       locales_to_process = locale ? [locale] : config.target_locales
       source = load_source_translations
 
       locales_to_process.to_h do |target_locale|
-        [target_locale, translate_locale(source, target_locale, force:, force_keys:)]
+        [target_locale, translate_locale(source, target_locale, force:, force_keys:, include_manual:)]
       end
     end
 
@@ -220,13 +223,19 @@ module Locallingo
       raise Error, "accept-edits: key(s) not found in any target locale: #{missing.join(", ")}"
     end
 
-    def translate_locale(source, target_locale, force:, force_keys:)
+    def translate_locale(source, target_locale, force:, force_keys:, include_manual:)
       log("Processing #{target_locale}...")
 
       target = load_locale_translations(target_locale)
       locale_state = @state.load(target_locale)
       exceptions = load_exceptions(target_locale)
 
+      if force_keys.any? && !force
+        force_keys = resolve_force_keys(source, force_keys, locale_state, include_manual:, locale: target_locale)
+        # Every named key was manual: translate nothing rather than falling
+        # back to the missing/outdated keys nobody asked for.
+        return [] if force_keys.empty?
+      end
       keys = determine_keys_to_translate(source, target, locale_state, force:, force_keys:, exceptions:)
       if keys.empty?
         log("  No keys to translate for #{target_locale}")
@@ -289,6 +298,26 @@ module Locallingo
       (missing + outdated).uniq
     end
 
+    # Drops manual keys from the named force_keys (with a loud warning) unless
+    # the caller opted in to overwriting them.
+    def resolve_force_keys(source, force_keys, locale_state, include_manual:, locale:)
+      manual = (force_keys & source.keys).select { |key| locale_state[key].is_a?(Hash) && locale_state[key]["manual"] }
+      return force_keys if manual.empty?
+
+      if include_manual
+        warn_manual_keys(manual, locale, dry_run ? "would overwrite" : "overwriting")
+        force_keys
+      else
+        warn_manual_keys(manual, locale, dry_run ? "would skip" : "skipping", hint: true)
+        force_keys - manual
+      end
+    end
+
+    def warn_manual_keys(keys, locale, verb, hint: false)
+      keys.each { |key| warn("#{verb} manual (hand-edited) key #{key} for #{locale}") }
+      warn("Pass --include-manual to overwrite manual keys named via --force-key.") if hint
+    end
+
     def update_locale_state(source, locale_state, translations)
       translations.each_key do |key|
         next unless source[key]
@@ -298,8 +327,8 @@ module Locallingo
           "source_hash" => @state.hash(source[key]),
           "target_hash" => @state.hash(translations[key])
         }
-        # A force-keyed retranslation may overwrite a manual value on explicit
-        # request, but the protection flag itself must survive.
+        # A force-keyed retranslation overwrites a manual value only with
+        # include_manual, and even then the protection flag must survive.
         entry["manual"] = true if existing.is_a?(Hash) && existing["manual"]
         locale_state[key] = entry
       end

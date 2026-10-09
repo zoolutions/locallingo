@@ -287,23 +287,80 @@ RSpec.describe Locallingo::Manager do
   end
 
   describe "#translate! and manual keys" do
-    it "retranslates a manual key via force_keys but preserves the manual flag" do
-      with_app(
-        config: { "target_locales" => %w[de] },
-        locales: {
-          "en" => { "greeting" => { "hi" => "Hello" } },
-          "de" => { "greeting" => { "hi" => "Hallo" } }
-        }
-      ) do |root|
-        write_state(root, "greeting.de.json",
-                    "greeting.hi" => {
-                      "source_hash" => "stale000",
-                      "target_hash" => Locallingo::StateStore.hash("Hallo"),
-                      "manual" => true
-                    })
+    let(:manual_locales) do
+      {
+        "en" => { "greeting" => { "hi" => "Hello", "bye" => "Goodbye" } },
+        "de" => { "greeting" => { "hi" => "Hallo", "bye" => "Tschau" } }
+      }
+    end
+    let(:manual_state) do
+      {
+        "source_hash" => "stale000",
+        "target_hash" => Locallingo::StateStore.hash("Hallo"),
+        "manual" => true
+      }
+    end
+
+    it "skips a manual key named via force_keys and warns about --include-manual" do
+      with_app(config: { "target_locales" => %w[de] }, locales: manual_locales) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
         stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
 
-        described_class.new(config: config_for(root)).translate!(locale: "de", force_keys: ["greeting.hi"])
+        expect do
+          described_class.new(config: config_for(root)).translate!(locale: "de", force_keys: ["greeting.hi"])
+        end.to output(/greeting\.hi.*--include-manual/m).to_stderr
+
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
+        expect(de.dig("de", "greeting", "hi")).to eq("Hallo")
+        expect(read_state(root, "greeting.de.json").fetch("greeting.hi")).to eq(manual_state)
+      end
+    end
+
+    it "translates nothing else when every named force_key is manual" do
+      locales = manual_locales.merge("en" => { "greeting" => { "hi" => "Hello", "bye" => "Goodbye", "new" => "New" } })
+      with_app(config: { "target_locales" => %w[de] }, locales:) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
+        payloads = []
+        stub_llm_chat do |payload:, **|
+          payloads << payload
+          payload.transform_values { |v| "DE:#{v}" }
+        end
+
+        expect do
+          described_class.new(config: config_for(root)).translate!(locale: "de", force_keys: ["greeting.hi"])
+        end.to output(/greeting\.hi/).to_stderr
+
+        expect(payloads).to be_empty
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
+        expect(de.dig("de", "greeting")).not_to have_key("new")
+      end
+    end
+
+    it "still translates a non-manual force_key named alongside a manual one" do
+      with_app(config: { "target_locales" => %w[de] }, locales: manual_locales) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        expect do
+          described_class.new(config: config_for(root))
+                         .translate!(locale: "de", force_keys: %w[greeting.hi greeting.bye])
+        end.to output(/greeting\.hi/).to_stderr
+
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
+        expect(de.dig("de", "greeting", "hi")).to eq("Hallo")
+        expect(de.dig("de", "greeting", "bye")).to eq("DE:Goodbye")
+      end
+    end
+
+    it "retranslates a manual force_key with include_manual, keeping the manual flag and warning" do
+      with_app(config: { "target_locales" => %w[de] }, locales: manual_locales) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        expect do
+          described_class.new(config: config_for(root))
+                         .translate!(locale: "de", force_keys: ["greeting.hi"], include_manual: true)
+        end.to output(/overwr.*greeting\.hi/mi).to_stderr
 
         de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
         expect(de.dig("de", "greeting", "hi")).to eq("DE:Hello")
@@ -312,6 +369,18 @@ RSpec.describe Locallingo::Manager do
         expect(entry["source_hash"]).to eq(Locallingo::StateStore.hash("Hello"))
         expect(entry["target_hash"]).to eq(Locallingo::StateStore.hash("DE:Hello"))
         expect(entry["manual"]).to be(true)
+      end
+    end
+
+    it "does not let include_manual leak into --force" do
+      with_app(config: { "target_locales" => %w[de] }, locales: manual_locales) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        described_class.new(config: config_for(root)).translate!(locale: "de", force: true, include_manual: true)
+
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
+        expect(de.dig("de", "greeting", "hi")).to eq("Hallo")
       end
     end
 
