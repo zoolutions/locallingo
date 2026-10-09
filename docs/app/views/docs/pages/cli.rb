@@ -87,10 +87,13 @@ class Views::Docs::Pages::Cli < DocsUI::Page
         straight into a CI step.
 
         `translate` returns `1` when any key could not be translated: it prints
-        `⚠️ Translation finished: N keys failed` and lists them. The keys that
-        were translated are still written and the `after_translate` hooks still
-        run. Under `--dry-run` failures are reported but the exit code stays `0`.
-        To keep the old always-`0` behaviour, append `|| true`.
+        `⚠️ Translation finished: N keys failed` and lists them. Outside
+        `--dry-run`, the keys that were translated are still written and the
+        `after_translate` hooks still run. Under `--dry-run` nothing is written,
+        no hooks run, and failures are reported with exit code `0`.
+        Appending `|| true` restores the old always-`0` behaviour, but it also
+        hides every other failure, such as missing credentials or a broken
+        `.locallingo.yml`.
       MD
     end
   end

@@ -11,7 +11,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `⚠️ Translation finished: N keys failed` with the failed keys instead of
   `✅ Translation complete!`. Translated keys are still written and the
   `after_translate` hooks still run; `--dry-run` reports failures but exits `0`.
-  To keep the old always-`0` behaviour, append `|| true`. (#25)
+  Appending `|| true` restores the old always-`0` behaviour, but also hides
+  every other failure (missing credentials, a broken config). (#25)
 - `Manager#translate!` returns `{ locale => failed_keys }`. (#25)
 - Allow `ruby_llm` 2.x (dependency constraint widened from `< 2` to `< 3`). The
   gem only uses RubyLLM's stable chat API and guarded config accessors, so a
