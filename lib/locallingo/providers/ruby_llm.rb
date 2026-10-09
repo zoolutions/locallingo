@@ -14,9 +14,10 @@ module Locallingo
     # response is parsed with the robust JsonExtraction extractor because not
     # every provider guarantees fenceless JSON.
     #
-    # The system prompt is built once per locale and reused by every batch, so
-    # it is marked as a prompt cache boundary: providers that support caching
-    # (Anthropic, OpenAI-compatible) bill the repeated prefix at the cached rate.
+    # The system prompt is marked as a prompt cache boundary: the translation
+    # prompt is built once per locale and reused by every batch, so providers
+    # that support caching (Anthropic, OpenAI-compatible) bill the repeated
+    # prefix at the cached rate.
     class RubyLLM
       # Maps a RubyLLM provider symbol to the ENV var whose presence indicates
       # credentials are available, so we can fail fast with a clear message

@@ -16,9 +16,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Manager#translate!` returns `{ locale => failed_keys }`. (#25)
 - Require `ruby_llm` >= 2.1 (constraint is now `>= 2.1, < 3`; host apps pinned
   to RubyLLM 1.x or 2.0 must bump). The translation and quality-review system
-  prompt, reused by every batch of a locale, is marked as a prompt cache
-  boundary, so providers with prompt caching (Anthropic, OpenAI-compatible)
-  bill the repeated prefix at the cached rate. Anthropic only caches prompts
+  prompts are marked as prompt cache boundaries; the translation prompt is
+  reused by every batch of a locale, so providers with prompt caching
+  (Anthropic, OpenAI-compatible) bill that repeated prefix at the cached rate. Anthropic only caches prompts
   above its minimum length (~1024 tokens); shorter prompts are sent uncached.
 
 ### Fixed
