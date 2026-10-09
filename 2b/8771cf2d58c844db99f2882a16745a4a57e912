@@ -1,0 +1,22 @@
+spec/locallingo/providers/ruby_llm_spec.rb
+  s_1293b9652d1bbd::t_58d722ac1d9152 84,86-98
+  s_1293b9652d1bbd::t_57dbc3292acac3 85
+locallingo.gemspec
+  s_1293b9652d1bbd::t_a63ba5c8beb27c 50-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "2b8771cf2d58c844db99f2882a16745a4a57e912",
+  "prompts": {},
+  "sessions": {
+    "s_1293b9652d1bbd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4333d0e1-a366-4505-b6df-ca179126e07e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
