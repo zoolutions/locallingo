@@ -96,7 +96,7 @@ RSpec.describe Locallingo::CLI do
 
   describe "quality" do
     let(:quality_locales) do
-      { "en" => { "yoga" => { "a" => "Click here to breathe", "b" => "Stretch" },
+      { "en" => { "yoga" => { "a" => "Click here to breathe", "b" => "Stretch and stuff", "d" => "Sorry, oops" },
                   "ui" => { "c" => "Click here to continue" } } }
     end
 
@@ -115,7 +115,7 @@ RSpec.describe Locallingo::CLI do
       with_app(locales: quality_locales) do |root|
         out, _err, code = run_cli(root, %w[quality --key ui.c --key yoga.b --json])
 
-        expect(JSON.parse(out).map { |s| s["key"] }.uniq).to eq(["ui.c"])
+        expect(JSON.parse(out).map { |s| s["key"] }.uniq).to contain_exactly("ui.c", "yoga.b")
         expect(code).to eq(0)
       end
     end
