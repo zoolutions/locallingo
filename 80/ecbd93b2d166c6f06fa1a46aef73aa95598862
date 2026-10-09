@@ -1,0 +1,30 @@
+spec/locallingo/configuration_spec.rb
+  s_88577216e04e16::t_56c5730b1577ab 96-109
+lib/locallingo/configuration.rb
+  s_88577216e04e16::t_a0a75c9fed0333 58
+config/locallingo.default.yml
+  s_88577216e04e16::t_a0a75c9fed0333 32-34,47-48
+spec/locallingo/quality_checker_spec.rb
+  s_88577216e04e16::t_56c5730b1577ab 101-192
+lib/locallingo/cli.rb
+  s_88577216e04e16::t_a0a75c9fed0333 112,196-200
+  s_88577216e04e16::t_87c1fd557950e0 123,133-136
+lib/locallingo/quality_checker.rb
+  s_88577216e04e16::t_a0a75c9fed0333 34-37,39,42,121-138,140,176,197-199
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "80ecbd93b2d166c6f06fa1a46aef73aa95598862",
+  "prompts": {},
+  "sessions": {
+    "s_88577216e04e16": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d57ff2ef-0d25-49c6-9b6b-8cbc06d214bc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
