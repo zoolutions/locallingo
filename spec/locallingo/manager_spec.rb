@@ -316,6 +316,37 @@ RSpec.describe Locallingo::Manager do
       end
     end
 
+    it "reports 'would skip' and writes nothing on a dry run" do
+      with_app(config: { "target_locales" => %w[de] }, locales: manual_locales) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        expect do
+          described_class.new(config: config_for(root), dry_run: true)
+                         .translate!(locale: "de", force_keys: ["greeting.hi"])
+        end.to output(/would skip manual \(hand-edited\) key greeting\.hi/).to_stderr
+
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
+        expect(de.dig("de", "greeting", "hi")).to eq("Hallo")
+        expect(read_state(root, "greeting.de.json").fetch("greeting.hi")).to eq(manual_state)
+      end
+    end
+
+    it "reports 'would overwrite' under include_manual on a dry run" do
+      with_app(config: { "target_locales" => %w[de] }, locales: manual_locales) do |root|
+        write_state(root, "greeting.de.json", "greeting.hi" => manual_state)
+        stub_llm_chat { |payload:, **| payload.transform_values { |v| "DE:#{v}" } }
+
+        expect do
+          described_class.new(config: config_for(root), dry_run: true)
+                         .translate!(locale: "de", force_keys: ["greeting.hi"], include_manual: true)
+        end.to output(/would overwrite manual \(hand-edited\) key greeting\.hi/).to_stderr
+
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml"))
+        expect(de.dig("de", "greeting", "hi")).to eq("Hallo")
+      end
+    end
+
     it "translates nothing else when every named force_key is manual" do
       locales = manual_locales.merge("en" => { "greeting" => { "hi" => "Hello", "bye" => "Goodbye", "new" => "New" } })
       with_app(config: { "target_locales" => %w[de] }, locales:) do |root|

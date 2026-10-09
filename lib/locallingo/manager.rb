@@ -234,7 +234,10 @@ module Locallingo
         force_keys = resolve_force_keys(source, force_keys, locale_state, include_manual:, locale: target_locale)
         # Every named key was manual: translate nothing rather than falling
         # back to the missing/outdated keys nobody asked for.
-        return [] if force_keys.empty?
+        if force_keys.empty?
+          log("  No keys to translate for #{target_locale} (every --force-key is manual)")
+          return []
+        end
       end
       keys = determine_keys_to_translate(source, target, locale_state, force:, force_keys:, exceptions:)
       if keys.empty?
