@@ -1,0 +1,29 @@
+docs/app/views/docs/pages/prompt_glossary.rb
+  s_cf4b386e8f43b2::t_a0fafe51b20da3 20-30
+  s_cf4b386e8f43b2::t_c4e66bb70e8655 11,31
+lib/locallingo/manager.rb
+  s_cf4b386e8f43b2::t_aa6777516ac46f 251,253,256-261
+spec/locallingo/manager_spec.rb
+  s_cf4b386e8f43b2::t_1c88654ab78b7b 208-210
+  s_cf4b386e8f43b2::t_91db93ea518267 194-207
+lib/locallingo/configuration.rb
+  s_cf4b386e8f43b2::t_c1dc2a5f5922ef 102
+CHANGELOG.md
+  s_cf4b386e8f43b2::t_c4e66bb70e8655 10-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "e71d183a8025cc5c4ec6a0adf56a17ecbd7221b6",
+  "prompts": {},
+  "sessions": {
+    "s_cf4b386e8f43b2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "001b79ae-6479-49da-936c-9ef6d66aa7dd",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
