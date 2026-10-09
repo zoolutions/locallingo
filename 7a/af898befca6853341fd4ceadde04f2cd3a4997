@@ -1,0 +1,11 @@
+CHANGELOG.md
+  ai_agent 14-15
+docs/app/views/docs/pages/cli.rb
+  ai_agent 90-96
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "7aaf898befca6853341fd4ceadde04f2cd3a4997",
+  "prompts": {}
+}
