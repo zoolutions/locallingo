@@ -43,8 +43,9 @@ RSpec.describe Locallingo::CLI do
 
         _out, err, = run_cli(root, %w[translate --force-key greeting.hi])
         expect(err).to include("greeting.hi", "--include-manual")
-        expect(YAML.load_file(File.join(root, "config/locales/greeting.de.yml")).dig("de", "greeting", "hi"))
-          .to eq("Hallo")
+        de = YAML.load_file(File.join(root, "config/locales/greeting.de.yml")).fetch("de").fetch("greeting")
+        expect(de["hi"]).to eq("Hallo")
+        expect(de).not_to have_key("bye") # no fallback to the missing keys
 
         _out, err, code = run_cli(root, %w[translate --force-key greeting.hi --include-manual])
         expect(code).to eq(0)
