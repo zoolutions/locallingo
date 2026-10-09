@@ -1,0 +1,22 @@
+spec/locallingo/manager_spec.rb
+  s_88577216e04e16::t_8441602a327b78 290-341,344-363,375-383
+lib/locallingo/manager.rb
+  s_88577216e04e16::t_15fe79fc27c8e6 233,235-237
+  s_88577216e04e16::t_6fc1f867072b4f 234,238
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "3811d0dbc1cc181f711398e2b1cbc184f49b527d",
+  "prompts": {},
+  "sessions": {
+    "s_88577216e04e16": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d57ff2ef-0d25-49c6-9b6b-8cbc06d214bc",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
