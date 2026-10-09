@@ -7,6 +7,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Changed
+- The translation prompt asks for natural, idiomatic text in the target
+  language ("into natural, idiomatic German") instead of a word-for-word
+  translation: the meaning, phrasing and UI conventions a native speaker would
+  use, with idioms replaced by their local equivalent. Only newly translated or
+  outdated keys are affected; run `lingo translate --force` to redo all
+  non-manual keys (hand-edited `manual` keys stay untouched — redo those one at
+  a time with `--force-key` and compare).
+  The source language is now named too (`en` → "English").
+- The translation prompt no longer hardcodes "Use formal business language".
+  Register (formal "Sie"/"Lei" vs. informal "du"/"tu") belongs in each
+  locale's `language_guides` entry; add it there to keep a formal tone.
 - `lingo translate` exits `1` when any key fails to translate, and prints
   `⚠️ Translation finished: N keys failed` with the failed keys instead of
   `✅ Translation complete!`. Translated keys are still written and the

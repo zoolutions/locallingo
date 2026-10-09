@@ -99,7 +99,7 @@ module Locallingo
     def after_translate = Array(data.fetch("after_translate", []))
 
     BUILTIN_LANGUAGE_NAMES = {
-      "de" => "German", "sv" => "Swedish", "fr" => "French",
+      "en" => "English", "de" => "German", "sv" => "Swedish", "fr" => "French",
       "af" => "Afrikaans", "es" => "Spanish", "it" => "Italian",
       "nl" => "Dutch", "pt" => "Portuguese", "da" => "Danish",
       "nb" => "Norwegian", "no" => "Norwegian", "fi" => "Finnish"
