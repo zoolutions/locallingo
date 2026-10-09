@@ -25,7 +25,8 @@ class Views::Docs::Pages::PromptGlossary < DocsUI::Page
         word-for-word rendering of the source. The model is told to use the target
         language's own phrasing and software conventions, swap idioms for their
         local equivalent, and avoid calques, without adding or dropping
-        information. Use `language_guides` below to tighten the style per locale.
+        information. Register is not hardcoded: set formal or informal address
+        per locale in `language_guides` below.
       MD
     end
   end

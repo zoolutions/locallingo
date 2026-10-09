@@ -208,6 +208,7 @@ RSpec.describe Locallingo::Manager do
           expect(prompt).to include("Avoid calques")
           expect(prompt).to include("Never add, drop or change information")
           expect(prompt).to include("Terminology and any language guide below take precedence")
+          expect(prompt).not_to include("formal business language")
         end
       end
     end

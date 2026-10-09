@@ -264,7 +264,6 @@ module Locallingo
         ## General Rules
         - Preserve placeholders like #{config.placeholder_style} exactly as they appear
         - Preserve HTML tags if present
-        - Use formal business language
         - Keep translations concise - UI space is limited
         - Escape every double quote (") inside a translated value as \\" so the reply stays valid JSON
         - Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source
