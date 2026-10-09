@@ -46,7 +46,10 @@ class Views::Docs::Pages::Cli < DocsUI::Page
         | --- | --- |
         | `-l`, `--locale LOCALE` | Restrict to a single target locale |
         | `-f`, `--force` | Re-translate all keys (not just missing/changed) |
-        | `--force-key KEY` | Re-translate one specific key (repeatable) |
+        | `--force-key KEY` | Re-translate one specific key (repeatable); skips `manual` keys |
+        | `--include-manual` | Let `--force-key` overwrite `manual` keys |
+        | `--key KEY` | `accept-edits`, `quality`: act on one specific key (repeatable) |
+        | `--prefix PREFIX` | `quality`: check only keys starting with `PREFIX` |
         | `-v`, `--verbose` | Verbose logging |
         | `-n`, `--dry-run` | Show what would happen without writing files |
         | `--strict` | Fail on the strict-tier violation types |

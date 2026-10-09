@@ -69,8 +69,9 @@ class Views::Docs::Pages::DriftState < DocsUI::Page
         target hash no longer matches and `validate` flags a `manual_edit`.
         Running `lingo accept-edits` stamps the flagged values as intentional
         (setting `manual: true`) — add `--key a.b.c` to accept one key surgically.
-        Protected keys are skipped by `translate` and `--force`; only an explicit
-        `--force-key` rewrites one, and even then the `manual` flag survives.
+        Protected keys are skipped by `translate`, `--force` and `--force-key`;
+        only `--force-key` with `--include-manual` rewrites one, and even then
+        the `manual` flag survives.
       MD
     end
   end
