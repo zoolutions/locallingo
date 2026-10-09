@@ -16,13 +16,13 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   samples. (#10, #29)
 - `lingo translate --include-manual` lets `--force-key` overwrite keys flagged
   `manual`; each overwritten key is named on stderr and its `manual` flag
-  survives. (#11, #PRB)
+  survives. (#11, #30)
 
 ### Changed
 - `lingo translate --force-key` skips keys flagged `manual` (hand-edited, via
   `accept-edits`) and names each skipped key on stderr, the same protection
   `--force` already gave. If every named key is manual, nothing is translated.
-  Pass `--include-manual` to overwrite them as before. (#11, #PRB)
+  Pass `--include-manual` to overwrite them as before. (#11, #30)
 - The translation prompt asks for natural, idiomatic text in the target
   language ("into natural, idiomatic German") instead of a word-for-word
   translation: the meaning, phrasing and UI conventions a native speaker would
