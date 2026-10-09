@@ -40,6 +40,27 @@ RSpec.describe Locallingo::Manager do
         end
       end
 
+      it "reports the configured source locale, not en" do
+        with_app(
+          config: {
+            "source_locale" => "sv",
+            "target_locales" => %w[de],
+            "validators" => { "duplicate_values" => true }
+          },
+          locales: {
+            "sv" => {
+              "activerecord" => { "attributes" => { "user" => { "name" => "Namn" } } },
+              "admin" => { "users" => { "index" => { "name_column" => "Namn" } } }
+            }
+          }
+        ) do |root|
+          violations = described_class.new(config: config_for(root)).validate
+          expect(violations).to include(
+            a_hash_including(type: :duplicate_value, locale: "sv", key: "admin.users.index.name_column")
+          )
+        end
+      end
+
       it "does not flag when no duplication exists" do
         with_app(
           config: { "target_locales" => %w[de], "validators" => { "duplicate_values" => true } },

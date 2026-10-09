@@ -12,9 +12,9 @@ module Locallingo
       AR_ATTRIBUTES_PREFIX = "activerecord.attributes."
       AR_PREFIX = "activerecord."
 
-      # +source+ is the flat source (en) hash. Returns :duplicate_value
-      # violations naming both keys.
-      def call(source:)
+      # +source+ is the flat source-locale hash; +locale+ is the configured source
+      # locale. Returns :duplicate_value violations naming both keys.
+      def call(source:, locale:)
         ar_keys_by_value = source
                            .select { |key, _| key.start_with?(AR_ATTRIBUTES_PREFIX) }
                            .group_by { |_key, value| value }
@@ -30,7 +30,7 @@ module Locallingo
           ar_dupes = ar_keys_by_value[value]
           {
             type: :duplicate_value,
-            locale: "en",
+            locale:,
             key:,
             suggestion: "Value '#{value}' duplicates #{ar_dupes.join(", ")}. " \
                         "Use #{ar_dupes.first} instead."
