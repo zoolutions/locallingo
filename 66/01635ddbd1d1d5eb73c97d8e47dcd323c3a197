@@ -1,0 +1,21 @@
+CHANGELOG.md
+  s_1293b9652d1bbd::t_ea85c938cd353c 19-21
+lib/locallingo/providers/ruby_llm.rb
+  s_1293b9652d1bbd::t_ea85c938cd353c 17-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "6601635ddbd1d1d5eb73c97d8e47dcd323c3a197",
+  "prompts": {},
+  "sessions": {
+    "s_1293b9652d1bbd": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "4333d0e1-a366-4505-b6df-ca179126e07e",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
