@@ -122,6 +122,13 @@ RSpec.describe Locallingo::Translatable, :active_record do
       expect(article.translation_status(:de)).to eq(:missing)
     end
 
+    it "never flags the record's own source locale" do
+      article = Article.create!(written_in: "sv", body: { "sv" => { "title" => "Hej" } })
+      article.update!(body: { "sv" => { "title" => "Hej då" } })
+
+      expect(article.translation_state).to be_nil
+    end
+
     it "flags an untracked locale a person wrote in this save" do
       article = Article.create!(body: { "en" => source })
       article.update!(body: article.body.merge("sv" => { "title" => "Hej" }))
@@ -131,12 +138,14 @@ RSpec.describe Locallingo::Translatable, :active_record do
   end
 
   describe "#build_translation_target" do
-    it "sets translated leaves back into the source's nested shape and leaves out omitted ones" do
-      article = Article.create!(body: { "en" => source.merge("count" => 3) })
+    it "sets translated leaves into a copy of the source, keeping every other value and container" do
+      body = source.merge("count" => 3, "ids" => [12, 13], "table" => [%w[Name Price]], "tags" => [], "meta" => {})
+      article = Article.create!(body: { "en" => body })
 
-      target = article.build_translation_target("title" => "Hallo", "steps[1].text" => "Zwei")
+      target = article.build_translation_target("title" => "Hallo", "steps[0]" => "Eins", "steps[1].text" => "Zwei")
 
-      expect(target).to eq("title" => "Hallo", "steps" => [nil, { "text" => "Zwei" }], "count" => 3)
+      expect(target).to eq(body.merge("title" => "Hallo", "steps" => ["Eins", { "text" => "Zwei" }]))
+      expect(article.translation_source).to eq(body)
     end
   end
 end

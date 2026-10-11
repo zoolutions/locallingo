@@ -174,7 +174,7 @@ result.failed       # => keys that failed after retries
 - `MissingCredentialsError` is raised before any call when no key is found.
 - `translate.max_batch_chars` (or `max_batch_chars:`) caps the source
   characters per batch; `translate.pause` (or `pause:`) is the sleep after each
-  batch.
+  batch. Retries of failed or omitted keys keep their own backoff.
 - `Locallingo::Prompt.translation(config:, from:, to:, style:, instructions:)`
   returns the prompt itself.
 
@@ -219,11 +219,15 @@ Locallingo::RecordTranslator.new(translator:)
 
 - Saving a record runs `mark_hand_edits`: a target locale a person changed is
   flagged `manual` and never machine-overwritten (`include_manual: true`
-  overrides, keeping the flag). A cleared locale is not flagged; it is due again.
+  overrides, keeping the flag). That includes a target locale saved for the
+  first time, e.g. a source copy used as a placeholder at `create!`: leave
+  untranslated locales out of the column instead. A cleared locale is not
+  flagged; it is due again.
 - `RecordTranslator` sends one batched translation per source locale across all
   due records, then writes each record under `record.with_lock`. A record whose
   source changed, or whose target became manual, while the model answered is
-  skipped (`skipped:`) and left for the next run.
+  skipped (`skipped:`) and left for the next run, as is a due record with no
+  translatable text.
 - Nested values keep their shape; leaves the `translatable:` filter rejects are
   copied from the source. A record with any segment that failed after retries
   is not written at all: its paths are reported in `failed:`, and it stays due

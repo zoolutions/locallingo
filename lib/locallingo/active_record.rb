@@ -76,7 +76,7 @@ module Locallingo
     # that no longer matches its target_hash, or an untracked locale written in
     # this save. A cleared target is not flagged — it is missing and due again.
     def mark_hand_edits
-      translation_target_locales.each do |locale|
+      (translation_target_locales - [translation_source_locale]).each do |locale|
         target = translation_target(locale)
         next if translation_drift.blank?(target)
 
@@ -98,16 +98,13 @@ module Locallingo
       end
     end
 
-    # The target for translated +segments+ (`path => text`), in the source's
-    # nested shape: untranslatable leaves are copied from the source, segments
-    # without a translation are left out.
+    # The target for translated +segments+ (`path => text`): a deep copy of the
+    # source with each translated leaf set by path, so every other value and
+    # container (numbers, nested lists, empty ones) keeps its place.
     def build_translation_target(segments)
-      translatable = translation_segments
-      KeyFlattener.flatten(translation_source || {}).each_with_object({}) do |(path, value), target|
-        next KeyFlattener.set_nested_value(target, path, value) unless translatable.key?(path)
-
-        KeyFlattener.set_nested_value(target, path, segments[path]) if segments.key?(path)
-      end
+      target = JSON.parse(JSON.generate(translation_source || {}))
+      segments.each { |path, text| KeyFlattener.set_nested_value(target, path, text) }
+      target
     end
 
     # Column attributes that write +target+ for +locale+ plus its state entry.

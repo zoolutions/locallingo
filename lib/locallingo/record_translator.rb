@@ -33,7 +33,8 @@ module Locallingo
       @include_manual = include_manual
       @result = { translated: 0, failed: {}, skipped: [] }
 
-      due = records.select { |record| due?(record) }
+      due, empty = records.select { |record| due?(record) }.partition { |record| record.translation_segments.any? }
+      @result[:skipped].concat(empty.map(&:id))
       due.group_by(&:translation_source_locale).each do |from, group|
         translate_group(group, from:, style:, instructions:)
       end

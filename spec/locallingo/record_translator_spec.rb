@@ -166,6 +166,15 @@ RSpec.describe Locallingo::RecordTranslator, :active_record do
     expect(calls.size).to eq(2)
   end
 
+  it "skips a due record with no translatable text" do
+    stub_chat
+    record = Article.create!(body: { "en" => { "n" => 2 } })
+
+    expect(described_class.new(translator:).call(Article.all, to: "de"))
+      .to eq(translated: 0, failed: {}, skipped: [record.id])
+    expect(calls).to be_empty
+  end
+
   it "does nothing when no record is due" do
     stub_chat
 
