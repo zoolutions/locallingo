@@ -4,6 +4,7 @@ require "active_support/concern"
 require "active_support/core_ext/class/attribute"
 
 require_relative "../locallingo"
+require_relative "content_leaves"
 
 module Locallingo
   # Opt-in ActiveRecord concern (`require "locallingo/active_record"`) for the
@@ -128,24 +129,7 @@ module Locallingo
 
     private
 
-    # `path => [parts, value]` for every leaf of the source, where parts are
-    # the Hash keys and Array indices leading to it.
-    def translation_leaves(value = translation_source || {}, parts = [], leaves = {})
-      case value
-      when Hash then value.each { |key, item| translation_leaves(item, parts + [key.to_s], leaves) }
-      when Array then value.each_with_index { |item, index| translation_leaves(item, parts + [index], leaves) }
-      else leaves[translation_path(parts)] = [parts, value]
-      end
-      leaves
-    end
-
-    def translation_path(parts)
-      parts.each_with_index.map do |part, index|
-        next "[#{part}]" if part.is_a?(Integer)
-
-        index.zero? ? part : ".#{part}"
-      end.join
-    end
+    def translation_leaves = ContentLeaves.call(translation_source || {}, label: "#{self.class.name}##{id}")
 
     def translation_content = self[locallingo_translatable.column] || {}
     def translation_states = self[locallingo_translatable.state] || {}

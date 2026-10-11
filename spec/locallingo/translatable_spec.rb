@@ -149,6 +149,18 @@ RSpec.describe Locallingo::Translatable, :active_record do
     end
   end
 
+  it "raises when a literal key collides with a nested path" do
+    article = Article.create!(body: { "en" => { "table" => [["Name"]], "table[0][0]" => "Literal" } })
+
+    expect { article.translation_segments }.to raise_error(Locallingo::Error, /table\[0\]\[0\]/)
+  end
+
+  it "raises when a dotted key collides with a nested path" do
+    article = Article.create!(body: { "en" => { "a" => { "b" => "Nested" }, "a.b" => "Dotted" } })
+
+    expect { article.translation_segments }.to raise_error(Locallingo::Error, /"a\.b"/)
+  end
+
   describe "#build_translation_target" do
     it "sets strings inside nested arrays" do
       article = Article.create!(body: { "en" => { "table" => [%w[Name Price], ["A", 1]] } })
