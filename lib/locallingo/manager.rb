@@ -8,8 +8,10 @@ require "fileutils"
 require_relative "configuration"
 require_relative "key_flattener"
 require_relative "state_store"
+require_relative "drift"
 require_relative "providers/ruby_llm"
 require_relative "batch_translator"
+require_relative "prompt"
 require_relative "validators/missing"
 require_relative "validators/outdated"
 require_relative "validators/duplicate_values"
@@ -39,6 +41,7 @@ module Locallingo
       @verbose = verbose
       @cli_name = cli_name
       @state = StateStore.new(@config.state_dir)
+      @drift = Drift.new
       @provider = Providers::RubyLLM.new(provider: @config.provider)
       @logger = logger || build_logger
     end
@@ -127,11 +130,7 @@ module Locallingo
 
       plans.each_with_object({}) do |(target_locale, target, locale_state, accepted), results|
         accepted.each do |key|
-          locale_state[key] = {
-            "source_hash" => @state.hash(source[key]),
-            "target_hash" => @state.hash(target[key]),
-            "manual" => true
-          }
+          locale_state[key] = @drift.record(source: source[key], target: target[key], manual: true)
         end
         @state.save(target_locale, locale_state) unless dry_run
         results[target_locale] = accepted
@@ -179,7 +178,8 @@ module Locallingo
 
     def batch_translator
       @batch_translator ||= BatchTranslator.new(
-        provider: @provider, model: config.translate_model, batch_size: config.batch_size, log: method(:log)
+        provider: @provider, model: config.translate_model, batch_size: config.batch_size,
+        max_batch_chars: config.max_batch_chars, pause: config.pause, log: method(:log)
       )
     end
 
@@ -208,10 +208,7 @@ module Locallingo
       return target.keys.select { |key| source.key?(key) } if all
 
       target.keys.select do |key|
-        entry = locale_state[key]
-        next false unless source.key?(key) && entry.is_a?(Hash) && !entry["manual"]
-
-        entry["target_hash"] && entry["target_hash"] != @state.hash(target[key])
+        source.key?(key) && @drift.hand_edited?(target: target[key], entry: locale_state[key])
       end
     end
 
@@ -261,47 +258,10 @@ module Locallingo
       failed
     end
 
-    def translation_prompt(locale)
-      language = config.language_name(locale)
-      <<~PROMPT
-        Translate the following texts from #{config.language_name(config.source_locale)} into natural, idiomatic #{language}.
-        This is for #{config.context}.
-
-        ## Idiomatic Translation
-        - Translate the meaning, not word for word: write what a native #{language} speaker would actually say in this situation
-        - Use the phrasing, word order and UI conventions that are standard in #{language} software, even when they differ from the source
-        - Replace source-language idioms and set phrases with their natural #{language} equivalent instead of translating them literally
-        - Avoid calques and anglicisms when an established #{language} expression exists
-        - Never add, drop or change information to make a sentence sound natural
-        - Terminology and any language guide below take precedence over these style rules
-
-        ## General Rules
-        - Preserve placeholders like #{config.placeholder_style} exactly as they appear
-        - Preserve HTML tags if present
-        - Keep translations concise - UI space is limited
-        - Escape every double quote (") inside a translated value as \\" so the reply stays valid JSON
-        - Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source
-        #{glossary_section}#{language_guide_section(locale)}
-        Return ONLY a raw JSON object mapping each input key to its translation,
-        with no surrounding prose and no markdown code fences:
-        {"key1": "translated1", "key2": "translated2"}
-      PROMPT
-    end
-
-    def glossary_section
-      return "" if config.glossary.empty?
-
-      lines = config.glossary.map { |term, meaning| "        - \"#{term}\" = #{meaning}" }
-      "\n## Terminology\n#{lines.join("\n")}\n"
-    end
-
-    def language_guide_section(locale)
-      guide = config.language_guide(locale)
-      guide.empty? ? "" : "\n#{guide}\n"
-    end
+    def translation_prompt(locale) = Prompt.translation(config:, from: config.source_locale, to: locale)
 
     def determine_keys_to_translate(source, target, locale_state, force:, force_keys:, exceptions:)
-      manual_keys = locale_state.select { |_k, v| v.is_a?(Hash) && v["manual"] }.keys.to_set
+      manual_keys = locale_state.select { |_key, entry| @drift.manual?(entry) }.keys.to_set
       return source.keys - manual_keys.to_a if force
       return force_keys & source.keys if force_keys.any?
 
@@ -314,7 +274,7 @@ module Locallingo
     # Drops manual keys from the named force_keys (with a loud warning) unless
     # the caller opted in to overwriting them.
     def resolve_force_keys(source, force_keys, locale_state, include_manual:, locale:)
-      manual = (force_keys & source.keys).select { |key| locale_state[key].is_a?(Hash) && locale_state[key]["manual"] }
+      manual = (force_keys & source.keys).select { |key| @drift.manual?(locale_state[key]) }
       return force_keys if manual.empty?
 
       if include_manual
@@ -335,15 +295,11 @@ module Locallingo
       translations.each_key do |key|
         next unless source[key]
 
-        existing = locale_state[key]
-        entry = {
-          "source_hash" => @state.hash(source[key]),
-          "target_hash" => @state.hash(translations[key])
-        }
         # A force-keyed retranslation overwrites a manual value only with
         # include_manual, and even then the protection flag must survive.
-        entry["manual"] = true if existing.is_a?(Hash) && existing["manual"]
-        locale_state[key] = entry
+        locale_state[key] = @drift.record(
+          source: source[key], target: translations[key], manual: @drift.manual?(locale_state[key])
+        )
       end
     end
 

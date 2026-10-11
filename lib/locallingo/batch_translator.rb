@@ -17,10 +17,16 @@ module Locallingo
     BASE_SLEEP_DURATION = 1.0
 
     # `log` is called as `log.call(message, level: :info)`.
-    def initialize(provider:, model:, batch_size:, log:)
+    #
+    # A batch closes at `batch_size` keys or `max_batch_chars` characters of
+    # source text, whichever comes first; a single oversized value goes alone.
+    # `pause` is the sleep after each batch (0 in a background job).
+    def initialize(provider:, model:, batch_size:, log:, max_batch_chars: nil, pause: BASE_SLEEP_DURATION)
       @provider = provider
       @model = model
       @batch_size = batch_size
+      @max_batch_chars = max_batch_chars
+      @pause = pause
       @log = log
     end
 
@@ -66,7 +72,7 @@ module Locallingo
       translations = {}
       failed = []
 
-      keys.each_slice(@batch_size) do |batch|
+      batches(keys).each do |batch|
         result = translate_batch(batch.to_h { |key| [key, @source[key]] })
         batch.each do |key|
           if result.key?(key) && !result[key].to_s.empty?
@@ -75,11 +81,28 @@ module Locallingo
             failed << key
           end
         end
-        sleep(BASE_SLEEP_DURATION)
+        sleep(@pause) if @pause.positive?
       end
 
       [translations, failed]
     end
+
+    def batches(keys)
+      return keys.each_slice(@batch_size).to_a unless @max_batch_chars
+
+      keys.each_with_object([[]]) do |key, groups|
+        groups << [] if full?(groups.last, key)
+        groups.last << key
+      end
+    end
+
+    def full?(batch, key)
+      return false if batch.empty?
+
+      batch.size >= @batch_size || chars(batch) + chars([key]) > @max_batch_chars
+    end
+
+    def chars(batch) = batch.sum { |key| @source[key].to_s.length }
 
     def translate_batch(payload)
       return {} if payload.empty?

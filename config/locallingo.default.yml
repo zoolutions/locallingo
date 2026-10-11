@@ -26,6 +26,12 @@ defaults:
   translate:
     model: gpt-5-mini
     batch_size: 20
+    # Optional cap on the characters of source text per batch (a batch closes at
+    # batch_size keys or max_batch_chars, whichever comes first). Useful for long
+    # prose; a single oversized value is still sent alone. null = keys only.
+    max_batch_chars: null
+    # Seconds to sleep after each batch (rate-limit courtesy). 0 disables it.
+    pause: 1.0
 
   quality:
     model: gpt-4o-mini

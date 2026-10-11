@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative "../state_store"
+require_relative "../drift"
 
 module Locallingo
   module Validators
@@ -12,19 +12,15 @@ module Locallingo
     # it was edited by a human — surface it so the operator can protect it with
     # `accept-edits` before the next translate run overwrites it.
     class ManualEdits
-      def initialize(cli_name: "lingo")
+      def initialize(cli_name: "lingo", drift: Drift.new)
         @cli_name = cli_name
+        @drift = drift
       end
 
       # +target+ is the flat target hash; +locale_state+ its loaded state.
       def call(target:, locale_state:, locale:)
         target.filter_map do |key, value|
-          entry = locale_state[key]
-          next unless entry.is_a?(Hash)
-          next if entry["manual"]
-
-          stored = entry["target_hash"]
-          next unless stored && stored != StateStore.hash(value)
+          next unless @drift.hand_edited?(target: value, entry: locale_state[key])
 
           {
             type: :manual_edit,

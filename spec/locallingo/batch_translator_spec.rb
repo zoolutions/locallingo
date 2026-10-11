@@ -13,8 +13,8 @@ RSpec.describe Locallingo::BatchTranslator do
     provider
   end
 
-  def build_translator(provider, batch_size: 20)
-    translator = described_class.new(provider:, model: "m", batch_size:, log: ->(*, **) {})
+  def build_translator(provider, batch_size: 20, **options)
+    translator = described_class.new(provider:, model: "m", batch_size:, log: ->(*, **) {}, **options)
     allow(translator).to receive(:sleep)
     translator
   end
@@ -82,5 +82,63 @@ RSpec.describe Locallingo::BatchTranslator do
     expect(translated).to eq("a" => "DE:A", "b" => "DE:Text b")
     expect(failed).to be_empty
     expect(calls).to eq([%w[a b], %w[b]])
+  end
+
+  describe "max_batch_chars" do
+    let(:echo) { build_provider(calls) { |payload| payload.transform_values { |v| "DE:#{v}" } } }
+
+    it "closes a batch once the next value would exceed the character budget" do
+      source = { "a" => "x" * 40, "b" => "x" * 40, "c" => "x" * 40, "d" => "x" * 10 }
+
+      translated, = build_translator(echo, max_batch_chars: 100).call(source, source.keys, instructions: "x")
+
+      expect(calls).to eq([%w[a b], %w[c d]])
+      expect(translated.keys).to eq(source.keys)
+    end
+
+    it "still closes a batch at batch_size keys" do
+      build_translator(echo, batch_size: 3, max_batch_chars: 10_000).call(source, source.keys, instructions: "x")
+
+      expect(calls).to eq([%w[a b c], %w[d e f], %w[g h]])
+    end
+
+    it "sends a single oversized value alone" do
+      source = { "a" => "short", "b" => "x" * 500, "c" => "short" }
+
+      build_translator(echo, max_batch_chars: 100).call(source, source.keys, instructions: "x")
+
+      expect(calls).to eq([%w[a], %w[b], %w[c]])
+    end
+
+    it "counts keys only when no budget is given" do
+      build_translator(echo, batch_size: 5).call(source, source.keys, instructions: "x")
+
+      expect(calls).to eq([%w[a b c d e], %w[f g h]])
+    end
+  end
+
+  describe "pause" do
+    let(:echo) { build_provider(calls) { |payload| payload.transform_values { |v| "DE:#{v}" } } }
+
+    it "sleeps BASE_SLEEP_DURATION after each batch by default" do
+      translator = build_translator(echo, batch_size: 4)
+      translator.call(source, source.keys, instructions: "x")
+
+      expect(translator).to have_received(:sleep).with(described_class::BASE_SLEEP_DURATION).twice
+    end
+
+    it "sleeps the configured pause after each batch" do
+      translator = build_translator(echo, batch_size: 4, pause: 0.25)
+      translator.call(source, source.keys, instructions: "x")
+
+      expect(translator).to have_received(:sleep).with(0.25).twice
+    end
+
+    it "never sleeps with pause: 0 when every batch succeeds" do
+      translator = build_translator(echo, batch_size: 4, pause: 0)
+      translator.call(source, source.keys, instructions: "x")
+
+      expect(translator).not_to have_received(:sleep)
+    end
   end
 end

@@ -22,6 +22,30 @@ RSpec.describe Locallingo::Configuration do
     end
   end
 
+  describe "translate batching" do
+    it "has no character budget and a 1 second pause by default" do
+      Dir.mktmpdir do |root|
+        config = described_class.load(root_path: root)
+        expect(config.max_batch_chars).to be_nil
+        expect(config.pause).to eq(1.0)
+      end
+    end
+
+    it "reads translate.max_batch_chars and translate.pause" do
+      with_app(locales: {}, config: { "translate" => { "max_batch_chars" => 4000, "pause" => 0 } }) do |root|
+        config = config_for(root)
+        expect(config.max_batch_chars).to eq(4000)
+        expect(config.pause).to eq(0)
+        expect(config.batch_size).to eq(20)
+      end
+    end
+
+    it "falls back to the 1 second pause when the shipped default is absent" do
+      config = described_class.new(root_path: Dir.pwd, data: { "translate" => {} })
+      expect(config.pause).to eq(Locallingo::BatchTranslator::BASE_SLEEP_DURATION)
+    end
+  end
+
   it "deep-merges a package override onto defaults" do
     raw = <<~YAML
       defaults:

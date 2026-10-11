@@ -18,6 +18,11 @@ module Locallingo
     # prompt is built once per locale and reused by every batch, so providers
     # that support caching (Anthropic, OpenAI-compatible) bill the repeated
     # prefix at the cached rate.
+    #
+    # Given a `RubyLLM::Context` (`RubyLLM.context { |c| c.anthropic_api_key = … }`),
+    # every chat runs on that context's own configuration: the global
+    # `RubyLLM.config` is never written, so translators with different keys
+    # (one per tenant) can run concurrently.
     class RubyLLM
       # Maps a RubyLLM provider symbol to the ENV var whose presence indicates
       # credentials are available, so we can fail fast with a clear message
@@ -30,10 +35,11 @@ module Locallingo
         openrouter: "OPENROUTER_API_KEY"
       }.freeze
 
-      attr_reader :provider
+      attr_reader :provider, :context
 
-      def initialize(provider:)
+      def initialize(provider:, context: nil)
         @provider = provider.to_sym
+        @context = context
       end
 
       # True when a key for the configured provider is found in any source
@@ -50,6 +56,12 @@ module Locallingo
       def ensure_credentials!
         return if credentials?
 
+        if context
+          raise MissingCredentialsError,
+                "No credentials for provider #{provider.inspect}: the given RubyLLM context " \
+                "has no #{key_setting}."
+        end
+
         raise MissingCredentialsError,
               "No credentials for provider #{provider.inspect}. " \
               "Set #{CREDENTIAL_ENV[provider]} in ENV, call " \
@@ -61,19 +73,20 @@ module Locallingo
       # the model and return the parsed JSON object as a Hash.
       def chat(model:, instructions:, payload:)
         require "ruby_llm"
-        configure_credentials!
 
-        conversation = ::RubyLLM.chat(
-          model:,
-          provider:,
-          assume_model_exists: true
-        ).with_instructions(instructions, cache_until_here: true)
-
+        conversation = new_chat(model).with_instructions(instructions, cache_until_here: true)
         response = conversation.ask(JSON.pretty_generate(payload))
         JsonExtraction.extract_object(response.content)
       end
 
       private
+
+      def new_chat(model)
+        return context.chat(model:, provider:, assume_model_exists: true) if context
+
+        configure_credentials!
+        ::RubyLLM.chat(model:, provider:, assume_model_exists: true)
+      end
 
       # RubyLLM does not read provider API keys from ENV on its own, so a
       # standalone CLI run (no Rails initializer to call RubyLLM.configure)
@@ -98,7 +111,16 @@ module Locallingo
       # Key resolution across sources, in precedence order. Used by
       # #credentials? as a fail-fast check before any network call.
       def resolved_api_key
+        return context_api_key if context
+
         settings_api_key || host_configured_api_key || env_api_key
+      end
+
+      # With a context, its own config is the only source: the chat never
+      # reads the settings, the global config or ENV.
+      def context_api_key
+        config = context.config
+        config.respond_to?(key_setting) ? presence(config.public_send(key_setting)) : nil
       end
 
       def settings_api_key

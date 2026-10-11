@@ -146,6 +146,98 @@ Locallingo::Manager.new(config:).validate           # => [violations]
 Locallingo::QualityChecker.new(config:).check(locale: "en")
 ```
 
+### Translating text that is not in locale files
+
+`Locallingo::Translator` runs the same prompt (rules, glossary, language guide),
+provider, model and batching over a plain `{ key => text }` hash:
+
+```ruby
+require "ruby_llm" # for RubyLLM.context (Bundler.require already loads it in Rails)
+
+translator = Locallingo::Translator.new(
+  config: Locallingo.configuration(root_path: Dir.pwd),
+  context: RubyLLM.context { |c| c.anthropic_api_key = tenant_key }, # optional, per-tenant key
+  pause: 0                                                           # no sleep between batches
+)
+
+result = translator.translate(
+  { "title" => "Hello", "intro" => "Some **markdown**." },
+  from: "en", to: "de",
+  style: :prose,                                 # :ui (default) or :prose (keeps Markdown, no brevity rule)
+  instructions: "Write in a warm, plain voice."  # appended after the language guide
+)
+result.translations # => { "title" => "Hallo", "intro" => "Etwas **Markdown**." }
+result.failed       # => keys that failed after retries
+```
+
+- With a `context:`, every call uses that `RubyLLM::Context`'s config; the
+  global `RubyLLM.config` is never written, so tenants can translate
+  concurrently.
+- `MissingCredentialsError` is raised before any call when no key is found.
+- `translate.max_batch_chars` (or `max_batch_chars:`) limits the source
+  characters per batch (a single longer value is sent alone, not split); `translate.pause` (or `pause:`) is the sleep after each
+  batch. Retries of failed or omitted keys keep their own backoff.
+- `Locallingo::Prompt.translation(config:, from:, to:, style:, instructions:)`
+  returns the prompt itself.
+
+`Locallingo::Drift` is the missing / outdated / hand-edited rule over the state
+entry shape (`source_hash`, `target_hash`, `manual`), for strings or nested
+values:
+
+```ruby
+drift = Locallingo::Drift.new  # hasher: any callable(String) -> String
+drift.status(source:, target:, entry:)  # => :missing | :outdated | :current
+drift.due?(source:, target:, entry:, force: false, include_manual: false)
+drift.hand_edited?(target:, entry:)
+drift.record(source:, target:, manual: false) # => a new entry
+```
+
+### Translating records
+
+`require "locallingo/active_record"` (ActiveRecord >= 7.1; nothing loads
+ActiveRecord otherwise) adds a concern for a JSON(B) column keyed by locale
+plus a JSON(B) state column:
+
+```ruby
+class Article < ApplicationRecord
+  include Locallingo::Translatable
+
+  translates_content :body,                  # { "en" => { … }, "de" => { … } }
+    state: :translation_state,               # { "de" => { "source_hash", "target_hash", "manual" } }
+    source_locale: -> { "en" },              # String/Symbol, or a callable run on the record
+    target_locales: -> { %w[de sv] },
+    translatable: ->(path, value) { true }   # optional filter on flattened String leaves
+end
+
+article.translation_status(:de)   # => :missing | :outdated | :current
+article.translation_manual?(:de)
+article.translation_due?(:de, force: false)
+article.record_translation(:de, manual: false)
+
+Locallingo::RecordTranslator.new(translator:)
+  .call(Article.where(id: ids), to: "de", style: :prose)
+# => { translated: 3, failed: { article_id => [paths] }, skipped: [ids] }
+```
+
+- Saving a record runs `mark_hand_edits`: a target locale a person changed is
+  flagged `manual` and never machine-overwritten (`include_manual: true`
+  overrides, keeping the flag). That includes a target locale saved for the
+  first time, e.g. a source copy used as a placeholder at `create!`: leave
+  untranslated locales out of the column instead. A cleared locale is not
+  flagged and is due again, unless it was already `manual`: the flag stays, so
+  retranslating it needs `include_manual: true`.
+- `RecordTranslator` sends one batched translation per source locale across all
+  due records, then writes each record under `record.with_lock`. A record whose
+  source changed, or whose target became manual, while the model answered is
+  skipped (`skipped:`) and left for the next run, as is a due record with no
+  translatable text.
+- Nested values keep their shape; leaves the `translatable:` filter rejects are
+  copied from the source. A record with any segment that failed after retries
+  is not written at all: its paths are reported in `failed:`, and it stays due
+  for the next run (your fallback to the source locale applies meanwhile).
+- Writes use `update_columns`; pass `write: ->(record, attributes) { … }` to
+  bump a lock version or run validations.
+
 ## License
 
 MIT © Mikael Henriksson
