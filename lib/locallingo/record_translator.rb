@@ -12,7 +12,8 @@ module Locallingo
   # batched translation per source locale. Each record is then written under
   # its row lock, after re-checking that its source is unchanged and the
   # target is still due: a source edited or a target hand-written while the
-  # model answered is skipped and left for the next run.
+  # model answered is skipped and left for the next run. A record with any
+  # failed segment is not written; it stays due and its paths are reported.
   #
   # Records must be persisted and of one model (ids are the key prefix). This
   # class never loads ActiveRecord itself; records only need the concern.
@@ -54,7 +55,9 @@ module Locallingo
         translations = own(result.translations, record).to_h
         failed = own(result.failed.to_h { |key| [key, nil] }, record).map(&:first)
         @result[:failed][record.id] = failed if failed.any?
-        write(record, translations, digests[record]) if translations.any?
+        # All or nothing per record: one state entry covers the whole locale,
+        # so a partial write would read as current with values missing.
+        write(record, translations, digests[record]) if failed.empty? && translations.any?
       end
     end
 

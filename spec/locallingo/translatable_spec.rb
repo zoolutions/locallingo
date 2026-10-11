@@ -67,6 +67,19 @@ RSpec.describe Locallingo::Translatable, :active_record do
     end
   end
 
+  it "records state with a custom hasher" do
+    klass = Class.new(Article) do
+      def self.name = "HashedArticle"
+
+      translates_content :body, state: :translation_state, source_locale: "en", target_locales: %w[de],
+                                hasher: ->(text) { "len:#{text.length}" }
+    end
+    article = klass.create!(body: { "en" => { "title" => "Hello" }, "de" => { "title" => "Hallo" } })
+    article.record_translation(:de)
+
+    expect(article.translation_state["de"]["source_hash"]).to eq("len:#{'{"title":"Hello"}'.length}")
+  end
+
   describe "#translation_due?" do
     it "is true for a missing locale and false once translated" do
       expect(Article.create!(body: { "en" => source }).translation_due?(:de)).to be(true)

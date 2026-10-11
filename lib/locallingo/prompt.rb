@@ -67,5 +67,7 @@ module Locallingo
       text = instructions.to_s.strip
       text.empty? ? "" : "\n## Additional Instructions\n#{text}\n"
     end
+
+    private_class_method :glossary_section, :language_guide_section, :instructions_section
   end
 end

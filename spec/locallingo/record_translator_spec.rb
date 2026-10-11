@@ -116,14 +116,17 @@ RSpec.describe Locallingo::RecordTranslator, :active_record do
     expect(record.reload.body["de"]).to eq("title" => "Grüß Gott")
   end
 
-  it "leaves out a value the model never returned and reports its path" do
+  it "writes nothing for a partially failed record, so it stays due, and reports the failed path" do
     record = article("title" => "Hello", "intro" => "Some **markdown**.")
+    other = article("title" => "Bye")
     stub_chat { |_payload, reply| reply.except("#{record.id}.intro") }
 
     result = described_class.new(translator:).call(Article.all, to: "de")
 
     expect(result).to eq(translated: 1, failed: { record.id => ["intro"] }, skipped: [])
-    expect(record.reload.body["de"]).to eq("title" => "DE:Hello")
+    expect(record.reload.body.keys).to eq(["en"])
+    expect(record.translation_due?(:de)).to be(true)
+    expect(other.reload.body["de"]).to eq("title" => "DE:Bye")
   end
 
   it "writes nothing for a record whose every segment failed" do

@@ -224,10 +224,10 @@ Locallingo::RecordTranslator.new(translator:)
   due records, then writes each record under `record.with_lock`. A record whose
   source changed, or whose target became manual, while the model answered is
   skipped (`skipped:`) and left for the next run.
-- Nested values keep their shape. A value the model left out is left out of
-  the target (your fallback to the source locale applies) and its path is
-  reported in `failed:`; the record is still recorded as translated, so redo
-  those paths with `force: true`.
+- Nested values keep their shape; leaves the `translatable:` filter rejects are
+  copied from the source. A record with any segment that failed after retries
+  is not written at all: its paths are reported in `failed:`, and it stays due
+  for the next run (your fallback to the source locale applies meanwhile).
 - Writes use `update_columns`; pass `write: ->(record, attributes) { … }` to
   bump a lock version or run validations.
 
