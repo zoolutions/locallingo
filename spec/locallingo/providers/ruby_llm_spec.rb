@@ -143,4 +143,66 @@ RSpec.describe Locallingo::Providers::RubyLLM do
       expect(RubyLLM.config.anthropic_api_key).to eq("lazy-key")
     end
   end
+
+  describe "with a RubyLLM::Context" do
+    let(:response) { double(content: '{"greeting":"hallo"}') }
+
+    def context_with(key) = RubyLLM.context { |config| config.anthropic_api_key = key }
+
+    def stub_context_chat(context)
+      conversation = double
+      allow(conversation).to receive_messages(with_instructions: conversation, ask: response)
+      allow(context).to receive(:chat).and_return(conversation)
+      conversation
+    end
+
+    before do
+      RubyLLM.config.anthropic_api_key = "global-key"
+      allow(RubyLLM).to receive(:chat)
+    end
+
+    it "chats through the context and never touches the global config" do
+      Locallingo.configure { |c| c.anthropic_api_key = "settings-key" }
+      context = context_with("tenant-key")
+      stub_context_chat(context)
+      provider = described_class.new(provider: :anthropic, context:)
+
+      result = provider.chat(model: "claude-x", instructions: "translate", payload: { "greeting" => "hello" })
+
+      expect(result).to eq("greeting" => "hallo")
+      expect(context).to have_received(:chat).with(model: "claude-x", provider: :anthropic, assume_model_exists: true)
+      expect(RubyLLM).not_to have_received(:chat)
+      expect(RubyLLM.config.anthropic_api_key).to eq("global-key")
+    end
+
+    it "keeps two translators' credentials apart when they run concurrently" do
+      contexts = [context_with("tenant-a"), context_with("tenant-b")]
+      contexts.each { |context| stub_context_chat(context) }
+      allow(RubyLLM.config).to receive(:anthropic_api_key=)
+
+      contexts.map do |context|
+        Thread.new do
+          described_class.new(provider: :anthropic, context:)
+                         .chat(model: "m", instructions: "x", payload: { "a" => "b" })
+        end
+      end.each(&:join)
+
+      expect(contexts.map { |c| c.config.anthropic_api_key }).to eq(%w[tenant-a tenant-b])
+      expect(RubyLLM.config).not_to have_received(:anthropic_api_key=)
+    end
+
+    it "checks credentials against the context only" do
+      stub_const("ENV", ENV.to_h.merge("ANTHROPIC_API_KEY" => "env-key"))
+
+      expect(described_class.new(provider: :anthropic, context: context_with("tenant-key")).credentials?).to be(true)
+      expect(described_class.new(provider: :anthropic, context: context_with(nil)).credentials?).to be(false)
+    end
+
+    it "names the context when it has no key" do
+      provider = described_class.new(provider: :anthropic, context: context_with(""))
+
+      expect { provider.ensure_credentials! }
+        .to raise_error(Locallingo::MissingCredentialsError, /RubyLLM context has no anthropic_api_key/)
+    end
+  end
 end
