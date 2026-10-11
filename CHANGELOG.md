@@ -7,6 +7,26 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- `Locallingo::Translator#translate(texts, from:, to:, style:, instructions:)`
+  translates a plain `{ key => text }` hash with the configured prompt,
+  glossary, language guide, provider and model, and returns `translations` and
+  `failed`. (#33)
+- `Locallingo::Prompt.translation`: the translation prompt, public. `style:
+  :prose` keeps Markdown structure and drops the UI brevity rule;
+  `instructions:` is appended after the language guide. The CLI's `:ui`
+  prompt is unchanged. (#33)
+- `Providers::RubyLLM.new(provider:, context:)` and `Translator.new(context:)`
+  take a `RubyLLM::Context`; with one, the global `RubyLLM.config` is never
+  written. (#33)
+- `translate.max_batch_chars` caps the source characters per batch;
+  `translate.pause` sets the sleep after each batch (default `1.0`). (#33)
+- `Locallingo::Drift`: missing / outdated / manual / hand-edited decisions as a
+  value over the state entry shape, for strings and nested values, with a
+  pluggable hasher. `Manager` and the validators use it; behaviour is
+  unchanged. (#33)
+- `require "locallingo/active_record"` adds `Locallingo::Translatable`
+  (`translates_content`), and `Locallingo::RecordTranslator` translates many
+  records in one batched call, writing each under its row lock. (#33)
 - `lingo quality --prefix yoga.` checks only the keys under a prefix, in both
   the static checks and the AI pass. A prefix that matches nothing exits `1`. (#10, #29)
 - `lingo quality --key a.b` (repeatable) checks exactly the named keys, and the
