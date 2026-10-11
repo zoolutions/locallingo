@@ -1,0 +1,23 @@
+lib/locallingo/content_leaves.rb
+  s_af1ff2133aee92::t_8a0b4516b9ed28 1-40
+lib/locallingo/active_record.rb
+  s_af1ff2133aee92::t_8a0b4516b9ed28 7,132
+spec/locallingo/translatable_spec.rb
+  s_af1ff2133aee92::t_f8cd991c346909 152-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "691e05df84dfd294b55c88d40de67289d4d563a4",
+  "prompts": {},
+  "sessions": {
+    "s_af1ff2133aee92": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "980842b4-0a2c-439f-a120-7b8c3a49ace1",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "mhenrixon <mikael@mhenrixon.com>"
+    }
+  }
+}
