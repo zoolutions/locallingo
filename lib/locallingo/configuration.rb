@@ -54,6 +54,8 @@ module Locallingo
     def provider = data.fetch("provider").to_sym
     def translate_model = dig("translate", "model")
     def batch_size = dig("translate", "batch_size")
+    def max_batch_chars = dig("translate", "max_batch_chars")
+    def pause = dig("translate", "pause") || 1.0
     def quality_model = dig("quality", "model")
     def quality_sample_size = dig("quality", "sample_size")
     def british_spellings? = !!dig("quality", "british_spellings")

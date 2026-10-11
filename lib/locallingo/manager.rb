@@ -180,7 +180,8 @@ module Locallingo
 
     def batch_translator
       @batch_translator ||= BatchTranslator.new(
-        provider: @provider, model: config.translate_model, batch_size: config.batch_size, log: method(:log)
+        provider: @provider, model: config.translate_model, batch_size: config.batch_size,
+        max_batch_chars: config.max_batch_chars, pause: config.pause, log: method(:log)
       )
     end
 
