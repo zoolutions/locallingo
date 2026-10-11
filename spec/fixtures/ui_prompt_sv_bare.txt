@@ -1,0 +1,21 @@
+Translate the following texts from English into natural, idiomatic Swedish.
+This is for a business application.
+
+## Idiomatic Translation
+- Translate the meaning, not word for word: write what a native Swedish speaker would actually say in this situation
+- Use the phrasing, word order and UI conventions that are standard in Swedish software, even when they differ from the source
+- Replace source-language idioms and set phrases with their natural Swedish equivalent instead of translating them literally
+- Avoid calques and anglicisms when an established Swedish expression exists
+- Never add, drop or change information to make a sentence sound natural
+- Terminology and any language guide below take precedence over these style rules
+
+## General Rules
+- Preserve placeholders like %<name>s, %<count>s exactly as they appear
+- Preserve HTML tags if present
+- Keep translations concise - UI space is limited
+- Escape every double quote (") inside a translated value as \" so the reply stays valid JSON
+- Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source
+
+Return ONLY a raw JSON object mapping each input key to its translation,
+with no surrounding prose and no markdown code fences:
+{"key1": "translated1", "key2": "translated2"}

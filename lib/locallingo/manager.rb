@@ -10,6 +10,7 @@ require_relative "key_flattener"
 require_relative "state_store"
 require_relative "providers/ruby_llm"
 require_relative "batch_translator"
+require_relative "prompt"
 require_relative "validators/missing"
 require_relative "validators/outdated"
 require_relative "validators/duplicate_values"
@@ -261,44 +262,7 @@ module Locallingo
       failed
     end
 
-    def translation_prompt(locale)
-      language = config.language_name(locale)
-      <<~PROMPT
-        Translate the following texts from #{config.language_name(config.source_locale)} into natural, idiomatic #{language}.
-        This is for #{config.context}.
-
-        ## Idiomatic Translation
-        - Translate the meaning, not word for word: write what a native #{language} speaker would actually say in this situation
-        - Use the phrasing, word order and UI conventions that are standard in #{language} software, even when they differ from the source
-        - Replace source-language idioms and set phrases with their natural #{language} equivalent instead of translating them literally
-        - Avoid calques and anglicisms when an established #{language} expression exists
-        - Never add, drop or change information to make a sentence sound natural
-        - Terminology and any language guide below take precedence over these style rules
-
-        ## General Rules
-        - Preserve placeholders like #{config.placeholder_style} exactly as they appear
-        - Preserve HTML tags if present
-        - Keep translations concise - UI space is limited
-        - Escape every double quote (") inside a translated value as \\" so the reply stays valid JSON
-        - Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source
-        #{glossary_section}#{language_guide_section(locale)}
-        Return ONLY a raw JSON object mapping each input key to its translation,
-        with no surrounding prose and no markdown code fences:
-        {"key1": "translated1", "key2": "translated2"}
-      PROMPT
-    end
-
-    def glossary_section
-      return "" if config.glossary.empty?
-
-      lines = config.glossary.map { |term, meaning| "        - \"#{term}\" = #{meaning}" }
-      "\n## Terminology\n#{lines.join("\n")}\n"
-    end
-
-    def language_guide_section(locale)
-      guide = config.language_guide(locale)
-      guide.empty? ? "" : "\n#{guide}\n"
-    end
+    def translation_prompt(locale) = Prompt.translation(config:, from: config.source_locale, to: locale)
 
     def determine_keys_to_translate(source, target, locale_state, force:, force_keys:, exceptions:)
       manual_keys = locale_state.select { |_k, v| v.is_a?(Hash) && v["manual"] }.keys.to_set
