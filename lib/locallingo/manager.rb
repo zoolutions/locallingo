@@ -8,6 +8,7 @@ require "fileutils"
 require_relative "configuration"
 require_relative "key_flattener"
 require_relative "state_store"
+require_relative "drift"
 require_relative "providers/ruby_llm"
 require_relative "batch_translator"
 require_relative "prompt"
@@ -40,6 +41,7 @@ module Locallingo
       @verbose = verbose
       @cli_name = cli_name
       @state = StateStore.new(@config.state_dir)
+      @drift = Drift.new
       @provider = Providers::RubyLLM.new(provider: @config.provider)
       @logger = logger || build_logger
     end
@@ -128,11 +130,7 @@ module Locallingo
 
       plans.each_with_object({}) do |(target_locale, target, locale_state, accepted), results|
         accepted.each do |key|
-          locale_state[key] = {
-            "source_hash" => @state.hash(source[key]),
-            "target_hash" => @state.hash(target[key]),
-            "manual" => true
-          }
+          locale_state[key] = @drift.record(source: source[key], target: target[key], manual: true)
         end
         @state.save(target_locale, locale_state) unless dry_run
         results[target_locale] = accepted
@@ -210,10 +208,7 @@ module Locallingo
       return target.keys.select { |key| source.key?(key) } if all
 
       target.keys.select do |key|
-        entry = locale_state[key]
-        next false unless source.key?(key) && entry.is_a?(Hash) && !entry["manual"]
-
-        entry["target_hash"] && entry["target_hash"] != @state.hash(target[key])
+        source.key?(key) && @drift.hand_edited?(target: target[key], entry: locale_state[key])
       end
     end
 
@@ -266,7 +261,7 @@ module Locallingo
     def translation_prompt(locale) = Prompt.translation(config:, from: config.source_locale, to: locale)
 
     def determine_keys_to_translate(source, target, locale_state, force:, force_keys:, exceptions:)
-      manual_keys = locale_state.select { |_k, v| v.is_a?(Hash) && v["manual"] }.keys.to_set
+      manual_keys = locale_state.select { |_key, entry| @drift.manual?(entry) }.keys.to_set
       return source.keys - manual_keys.to_a if force
       return force_keys & source.keys if force_keys.any?
 
@@ -279,7 +274,7 @@ module Locallingo
     # Drops manual keys from the named force_keys (with a loud warning) unless
     # the caller opted in to overwriting them.
     def resolve_force_keys(source, force_keys, locale_state, include_manual:, locale:)
-      manual = (force_keys & source.keys).select { |key| locale_state[key].is_a?(Hash) && locale_state[key]["manual"] }
+      manual = (force_keys & source.keys).select { |key| @drift.manual?(locale_state[key]) }
       return force_keys if manual.empty?
 
       if include_manual
@@ -300,15 +295,11 @@ module Locallingo
       translations.each_key do |key|
         next unless source[key]
 
-        existing = locale_state[key]
-        entry = {
-          "source_hash" => @state.hash(source[key]),
-          "target_hash" => @state.hash(translations[key])
-        }
         # A force-keyed retranslation overwrites a manual value only with
         # include_manual, and even then the protection flag must survive.
-        entry["manual"] = true if existing.is_a?(Hash) && existing["manual"]
-        locale_state[key] = entry
+        locale_state[key] = @drift.record(
+          source: source[key], target: translations[key], manual: @drift.manual?(locale_state[key])
+        )
       end
     end
 
