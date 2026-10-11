@@ -47,14 +47,21 @@ module Locallingo
 
     def translate_group(records, from:, style:, instructions:)
       digests = records.to_h { |record| [record, record.translation_source_digest] }
+      owners = {}
       segments = records.each_with_object({}) do |record, all|
-        record.translation_segments.each { |path, text| all["#{record.id}.#{path}"] = text }
+        record.translation_segments.each do |path, text|
+          key = "#{record.id}.#{path}"
+          raise Error, "Segment key #{key} is ambiguous across records (an id containing \".\"?)" if owners.key?(key)
+
+          owners[key] = [record, path]
+          all[key] = text
+        end
       end
 
       result = @translator.translate(segments, from:, to: @locale, style:, instructions:)
       records.each do |record|
-        translations = own(result.translations, record).to_h
-        failed = own(result.failed.to_h { |key| [key, nil] }, record).map(&:first)
+        translations = own(result.translations, owners, record).to_h
+        failed = own(result.failed.to_h { |key| [key, nil] }, owners, record).map(&:first)
         @result[:failed][record.id] = failed if failed.any?
         # All or nothing per record: one state entry covers the whole locale,
         # so a partial write would read as current with values missing.
@@ -62,10 +69,12 @@ module Locallingo
       end
     end
 
-    # The +record+'s pairs from +pairs+, keyed by path without the id prefix.
-    def own(pairs, record)
-      prefix = "#{record.id}."
-      pairs.filter_map { |key, value| [key.delete_prefix(prefix), value] if key.start_with?(prefix) }
+    # The +record+'s pairs from +pairs+, keyed by its own segment path.
+    def own(pairs, owners, record)
+      pairs.filter_map do |key, value|
+        owner, path = owners[key]
+        [path, value] if owner.equal?(record)
+      end
     end
 
     def write(record, translations, digest)

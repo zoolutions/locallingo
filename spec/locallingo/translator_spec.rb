@@ -77,6 +77,14 @@ RSpec.describe Locallingo::Translator do
     expect(calls.map { |c| c[:payload].keys }).to eq([["title"], ["intro"]])
   end
 
+  it "raises when two keys collapse to the same string" do
+    stub_chat
+
+    expect { build.translate({ :title => "A", "title" => "B" }, from: "en", to: "de") }
+      .to raise_error(Locallingo::Error, /"title"/)
+    expect(calls).to be_empty
+  end
+
   it "sends nothing for blank texts or an empty hash" do
     stub_chat
 

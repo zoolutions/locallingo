@@ -152,6 +152,8 @@ Locallingo::QualityChecker.new(config:).check(locale: "en")
 provider, model and batching over a plain `{ key => text }` hash:
 
 ```ruby
+require "ruby_llm" # for RubyLLM.context (Bundler.require already loads it in Rails)
+
 translator = Locallingo::Translator.new(
   config: Locallingo.configuration(root_path: Dir.pwd),
   context: RubyLLM.context { |c| c.anthropic_api_key = tenant_key }, # optional, per-tenant key
@@ -172,8 +174,8 @@ result.failed       # => keys that failed after retries
   global `RubyLLM.config` is never written, so tenants can translate
   concurrently.
 - `MissingCredentialsError` is raised before any call when no key is found.
-- `translate.max_batch_chars` (or `max_batch_chars:`) caps the source
-  characters per batch; `translate.pause` (or `pause:`) is the sleep after each
+- `translate.max_batch_chars` (or `max_batch_chars:`) limits the source
+  characters per batch (a single longer value is sent alone, not split); `translate.pause` (or `pause:`) is the sleep after each
   batch. Retries of failed or omitted keys keep their own backoff.
 - `Locallingo::Prompt.translation(config:, from:, to:, style:, instructions:)`
   returns the prompt itself.
@@ -222,7 +224,8 @@ Locallingo::RecordTranslator.new(translator:)
   overrides, keeping the flag). That includes a target locale saved for the
   first time, e.g. a source copy used as a placeholder at `create!`: leave
   untranslated locales out of the column instead. A cleared locale is not
-  flagged; it is due again.
+  flagged and is due again, unless it was already `manual`: the flag stays, so
+  retranslating it needs `include_manual: true`.
 - `RecordTranslator` sends one batched translation per source locale across all
   due records, then writes each record under `record.with_lock`. A record whose
   source changed, or whose target became manual, while the model answered is

@@ -38,9 +38,12 @@ RSpec.describe Locallingo::Translatable, :active_record do
       expect(article.translation_status(:de)).to eq(:outdated)
     end
 
-    it "is :current for an untracked translation written alongside the source" do
-      expect(Article.create!(body: { "en" => source, "sv" => { "title" => "Hej" } }).translation_status("sv"))
-        .to eq(:current)
+    it "is :current for an untracked translation" do
+      article = Article.create!(body: { "en" => source })
+      article.update_columns(body: article.body.merge("sv" => { "title" => "Hej" }))
+
+      expect(article.translation_state).to be_nil
+      expect(article.translation_status("sv")).to eq(:current)
     end
 
     it "reads the source locale from a callable evaluated on the record" do
@@ -137,7 +140,25 @@ RSpec.describe Locallingo::Translatable, :active_record do
     end
   end
 
+  describe "#translation_segments" do
+    it "includes strings inside nested arrays, with KeyFlattener-style paths" do
+      article = Article.create!(body: { "en" => { "table" => [%w[Name Price], ["A", 1]], "t" => { "x" => "y" } } })
+
+      expect(article.translation_segments)
+        .to eq("table[0][0]" => "Name", "table[0][1]" => "Price", "table[1][0]" => "A", "t.x" => "y")
+    end
+  end
+
   describe "#build_translation_target" do
+    it "sets strings inside nested arrays" do
+      article = Article.create!(body: { "en" => { "table" => [%w[Name Price], ["A", 1]] } })
+
+      target = article.build_translation_target("table[0][0]" => "Name_DE", "table[0][1]" => "Preis",
+                                                "table[1][0]" => "A_DE")
+
+      expect(target).to eq("table" => [%w[Name_DE Preis], ["A_DE", 1]])
+    end
+
     it "sets translated leaves into a copy of the source, keeping every other value and container" do
       body = source.merge("count" => 3, "ids" => [12, 13], "table" => [%w[Name Price]], "tags" => [], "meta" => {})
       article = Article.create!(body: { "en" => body })

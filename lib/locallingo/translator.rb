@@ -41,7 +41,7 @@ module Locallingo
     def translate(texts, from:, to:, style: :ui, instructions: nil)
       @provider.ensure_credentials!
 
-      source = texts.to_h { |key, text| [key.to_s, text] }.reject { |_key, text| text.to_s.strip.empty? }
+      source = stringify_keys(texts).reject { |_key, text| text.to_s.strip.empty? }
       return Result.new(translations: {}, failed: []) if source.empty?
 
       prompt = Prompt.translation(config:, from:, to:, style:, instructions:)
@@ -50,6 +50,14 @@ module Locallingo
     end
 
     private
+
+    def stringify_keys(texts)
+      texts.each_with_object({}) do |(key, text), source|
+        raise Error, "Duplicate key #{key.to_s.inspect} (e.g. :#{key} and \"#{key}\")" if source.key?(key.to_s)
+
+        source[key.to_s] = text
+      end
+    end
 
     def batch_translator
       @batch_translator ||= BatchTranslator.new(

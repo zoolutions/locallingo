@@ -175,6 +175,17 @@ RSpec.describe Locallingo::RecordTranslator, :active_record do
     expect(calls).to be_empty
   end
 
+  it "attributes segments to the right record even when ids share a dotted prefix" do
+    stub_chat
+    first = article("title" => "Hello", "b" => { "title" => "Nested" })
+    second = article("title" => "Bye")
+    allow(first).to receive(:id).and_return("a")
+    allow(second).to receive(:id).and_return("a.b")
+
+    expect { described_class.new(translator:).call([first, second], to: "de") }
+      .to raise_error(Locallingo::Error, /a\.b\.title/)
+  end
+
   it "does nothing when no record is due" do
     stub_chat
 

@@ -24,7 +24,7 @@ module Locallingo
 
     def translation(config:, from:, to:, style: :ui, instructions: nil)
       raise Error, "Unknown prompt style #{style.inspect} (expected one of #{STYLES.join(", ")})" unless
-        STYLES.include?(style.to_sym)
+        STYLES.include?(style.to_s.to_sym)
 
       language = config.language_name(to)
       <<~PROMPT

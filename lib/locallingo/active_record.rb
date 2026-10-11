@@ -91,19 +91,26 @@ module Locallingo
       end
     end
 
-    # The source's translatable String leaves, flattened (`steps[1].text`).
+    # The source's translatable String leaves, flattened (`steps[1].text`,
+    # `table[0][1]`). Unlike KeyFlattener, strings in nested arrays count.
     def translation_segments
-      KeyFlattener.flatten(translation_source || {}).select do |path, value|
-        value.is_a?(String) && !value.strip.empty? && locallingo_translatable.translatable.call(path, value)
-      end
+      translation_leaves.filter_map do |path, (_, value)|
+        next unless value.is_a?(String) && !value.strip.empty?
+
+        [path, value] if locallingo_translatable.translatable.call(path, value)
+      end.to_h
     end
 
     # The target for translated +segments+ (`path => text`): a deep copy of the
-    # source with each translated leaf set by path, so every other value and
+    # source with each translated leaf set in place, so every other value and
     # container (numbers, nested lists, empty ones) keeps its place.
     def build_translation_target(segments)
       target = JSON.parse(JSON.generate(translation_source || {}))
-      segments.each { |path, text| KeyFlattener.set_nested_value(target, path, text) }
+      leaves = translation_leaves
+      segments.each do |path, text|
+        *parents, last = leaves.fetch(path).first
+        (parents.empty? ? target : target.dig(*parents))[last] = text
+      end
       target
     end
 
@@ -120,6 +127,25 @@ module Locallingo
     def translation_drift = locallingo_translatable.drift
 
     private
+
+    # `path => [parts, value]` for every leaf of the source, where parts are
+    # the Hash keys and Array indices leading to it.
+    def translation_leaves(value = translation_source || {}, parts = [], leaves = {})
+      case value
+      when Hash then value.each { |key, item| translation_leaves(item, parts + [key.to_s], leaves) }
+      when Array then value.each_with_index { |item, index| translation_leaves(item, parts + [index], leaves) }
+      else leaves[translation_path(parts)] = [parts, value]
+      end
+      leaves
+    end
+
+    def translation_path(parts)
+      parts.each_with_index.map do |part, index|
+        next "[#{part}]" if part.is_a?(Integer)
+
+        index.zero? ? part : ".#{part}"
+      end.join
+    end
 
     def translation_content = self[locallingo_translatable.column] || {}
     def translation_states = self[locallingo_translatable.state] || {}

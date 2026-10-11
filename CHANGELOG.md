@@ -18,8 +18,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Providers::RubyLLM.new(provider:, context:)` and `Translator.new(context:)`
   take a `RubyLLM::Context`; with one, the global `RubyLLM.config` is never
   written. (#33)
-- `translate.max_batch_chars` caps the source characters per batch;
-  `translate.pause` sets the sleep after each batch (default `1.0`). (#33)
+- `translate.max_batch_chars` limits the source characters per batch (a single
+  value over the limit is sent alone, never split); `translate.pause` sets the
+  sleep after each batch (default `1.0`). (#33)
 - `Locallingo::Drift`: missing / outdated / manual / hand-edited decisions as a
   value over the state entry shape, for strings and nested values, with a
   pluggable hasher. `Manager` and the validators use it; behaviour is

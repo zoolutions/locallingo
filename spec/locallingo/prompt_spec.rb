@@ -81,8 +81,14 @@ RSpec.describe Locallingo::Prompt do
     end
   end
 
-  it "rejects an unknown style" do
-    expect { described_class.translation(config:, from: "en", to: "de", style: :poem) }
-      .to raise_error(Locallingo::Error, /style/)
+  it "rejects an unknown or nil style" do
+    [:poem, nil].each do |style|
+      expect { described_class.translation(config:, from: "en", to: "de", style:) }
+        .to raise_error(Locallingo::Error, /style/)
+    end
+  end
+
+  it "accepts the style as a String" do
+    expect(described_class.translation(config:, from: "en", to: "de", style: "ui")).to eq(fixture("ui_prompt_de.txt"))
   end
 end
