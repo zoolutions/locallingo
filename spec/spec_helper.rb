@@ -6,6 +6,7 @@ SimpleCov.start do
 end
 
 require "locallingo"
+require "conformance_kit/rspec"
 require "tmpdir"
 require "fileutils"
 
