@@ -170,9 +170,9 @@ result.translations # => { "title" => "Hallo", "intro" => "Etwas **Markdown**." 
 result.failed       # => keys that failed after retries
 ```
 
-- With a `context:`, every call uses that `RubyLLM::Context`'s config; the
-  global `RubyLLM.config` is never written, so tenants can translate
-  concurrently.
+- Every call runs on a `RubyLLM::Context`: the `context:` given, else one
+  built for that call from the resolved key. The global `RubyLLM.config` is
+  never written, so tenants can translate concurrently.
 - `MissingCredentialsError` is raised before any call when no key is found.
 - `translate.max_batch_chars` (or `max_batch_chars:`) limits the source
   characters per batch (a single longer value is sent alone, not split); `translate.pause` (or `pause:`) is the sleep after each

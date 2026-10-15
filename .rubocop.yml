@@ -74,6 +74,7 @@ Style/FormatStringToken:
 ThreadSafety/NewThread:
   Exclude:
     - "spec/locallingo/providers/ruby_llm_spec.rb"
+    - "spec/locallingo/providers/ruby_llm_context_spec.rb"
 
 # The LLM provider stub deliberately stubs any instance so specs never hit the
 # network — the whole point of the support file.
