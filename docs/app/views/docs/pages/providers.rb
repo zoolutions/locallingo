@@ -76,6 +76,12 @@ class Views::Docs::Pages::Providers < DocsUI::Page
         end
       RUBY
       md <<~'MD'
+        `configure` publishes the settings frozen, so a running thread never sees
+        half of them: call it again to change a key, never write to
+        `Locallingo.settings` (that raises `FrozenError`). With String keys the
+        settings are Ractor-shareable; a callable is kept as it is, which keeps
+        them readable on the main Ractor only.
+
         ### Standalone CLI runs
 
         `lingo` doesn't boot Rails, so an initializer never runs for it. Put the

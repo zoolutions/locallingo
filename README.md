@@ -48,7 +48,10 @@ CLI loads it on start — no Rails boot required. A key set via
 `Locallingo.configure` wins over one set through `RubyLLM.configure`, which
 wins over ENV. Locallingo never stores keys itself. `configure` publishes the
 settings frozen: change them by calling it again, never by writing to
-`Locallingo.settings`.
+`Locallingo.settings`. Nothing else needs calling at boot. With String keys
+the settings are Ractor-shareable; a callable key is kept as it is (resolved on
+every use, so it may close over a logger or a vault client), which keeps the
+settings readable on the main Ractor only.
 
 ## Configuration
 
@@ -243,6 +246,10 @@ Locallingo::RecordTranslator.new(translator:)
   for the next run (your fallback to the source locale applies meanwhile).
 - Writes use `update_columns`; pass `write: ->(record, attributes) { … }` to
   bump a lock version or run validations.
+- `translates_content` freezes the declaration as it is made, at boot: the
+  column and state names, a String or Array locale option (as a frozen copy)
+  and the drift. Callables are kept as they are, so they may close over app
+  state; like the model itself, a declaration is read on the main Ractor.
 
 ## License
 

@@ -35,13 +35,30 @@ module Locallingo
     end
 
     class_methods do
+      # The declaration is frozen as it is made, at boot: the column and state
+      # names, a String/Symbol/Array locale option (a frozen copy; the caller's
+      # own object is left alone) and the Drift. Callables (locale options,
+      # translatable:, hasher:) are kept as they are, so a declaration holding
+      # one is read on the main Ractor only, like the model itself.
       def translates_content(column, state:, source_locale:, target_locales:, translatable: nil, hasher: nil)
         self.locallingo_translatable = Definition.new(
-          column: column.to_s, state: state.to_s, source_locale:, target_locales:,
+          column: column.to_s.freeze, state: state.to_s.freeze,
+          source_locale: Translatable.frozen_option(source_locale),
+          target_locales: Translatable.frozen_option(target_locales),
           translatable: translatable || ->(_path, _value) { true },
-          drift: hasher ? Drift.new(hasher:) : Drift.new
+          drift: (hasher ? Drift.new(hasher:) : Drift.new).freeze
         )
         before_save :mark_hand_edits
+      end
+    end
+
+    # A frozen copy of a non-callable declaration option (a String, or an Array
+    # of them); a callable or an already frozen value comes back as it is.
+    def self.frozen_option(value)
+      case value
+      when Array then value.map { |item| frozen_option(item) }.freeze
+      when String then value.frozen? ? value : value.dup.freeze
+      else value
       end
     end
 
