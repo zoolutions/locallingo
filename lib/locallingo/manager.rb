@@ -163,11 +163,12 @@ module Locallingo
       combined
     end
 
-    # Run the configured after_translate hook commands (from the app root).
+    # Run the configured after_translate hook commands (from the app root, in
+    # the child process only: the process-wide cwd is never changed).
     def run_after_translate_hooks
       config.after_translate.each do |command|
         log("Running: #{command}")
-        Dir.chdir(config.root_path) { system(command) }
+        system(command, chdir: config.root_path)
       end
     end
 

@@ -235,6 +235,19 @@ RSpec.describe Locallingo::Manager do
     end
   end
 
+  describe "#run_after_translate_hooks" do
+    it "runs each hook from the app root without changing the process cwd" do
+      with_app(config: { "after_translate" => ["pwd > hook-cwd.txt"] }, locales: { "en" => {} }) do |root|
+        allow(Dir).to receive(:chdir).and_call_original
+
+        described_class.new(config: config_for(root)).run_after_translate_hooks
+
+        expect(File.read(File.join(root, "hook-cwd.txt")).strip).to eq(File.realpath(root))
+        expect(Dir).not_to have_received(:chdir)
+      end
+    end
+  end
+
   describe "#source_hash" do
     it "is stable across calls and changes when source changes" do
       with_app(config: {}, locales: { "en" => { "g" => { "h" => "Hi" } } }) do |root|
