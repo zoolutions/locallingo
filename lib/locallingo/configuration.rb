@@ -16,7 +16,7 @@ module Locallingo
   # other class parses raw config hashes.
   class Configuration
     CONFIG_FILENAMES = %w[.locallingo.yml .locallingo.yaml].freeze
-    DEFAULT_CONFIG_PATH = File.expand_path("../../config/locallingo.default.yml", __dir__)
+    DEFAULT_CONFIG_PATH = File.expand_path("../../config/locallingo.default.yml", __dir__).freeze
 
     attr_reader :root_path, :package, :data
 

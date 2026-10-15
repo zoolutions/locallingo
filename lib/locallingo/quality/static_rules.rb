@@ -11,6 +11,7 @@ module Locallingo
         "Can not" => "Cannot"
       }.freeze
 
+      # Every level frozen, so any Ractor can read the rules.
       RULES = {
         terminology: {
           /\bcan not\b/i => "Use 'cannot' (one word)",
@@ -18,11 +19,11 @@ module Locallingo
             "Use 'log in' (verb) not 'login' here",
           /\bclick\s+here\b/i => "Avoid 'click here' - use descriptive link text",
           /\bplease\b.*\bplease\b/i => "Multiple 'please' in same text - remove redundancy"
-        },
+        }.freeze,
         placeholders: {
           /%\{[^}]*\s[^}]*\}/ => "Placeholder contains spaces - may cause issues",
           /%\{[A-Z]/ => "Placeholder starts with uppercase - convention is lowercase"
-        },
+        }.freeze,
         clarity: {
           /\betc\.?\b/i => "Avoid 'etc.' - be specific or use 'and more'",
           /\bstuff\b/i => "Vague word 'stuff' - be more specific",
@@ -30,19 +31,19 @@ module Locallingo
           /\basap\b/i => "Avoid abbreviation 'ASAP' - use 'as soon as possible'",
           /\bfyi\b/i => "Avoid abbreviation 'FYI' - rephrase",
           /\s{2,}/ => "Multiple consecutive spaces"
-        },
+        }.freeze,
         business: {
           /\bsorry\b/i => "Consider 'We apologize' for formal business tone",
           /\boops\b/i => "Informal - use professional error messaging",
           /\buh\s*oh\b/i => "Informal - use professional error messaging",
           /\bawesome\b/i => "Consider more professional alternatives",
           /\bcool\b(?!\s*down)/i => "Informal - consider 'great' or 'excellent'"
-        },
+        }.freeze,
         accessibility: {
           /\bsee\s+below\b/i => "Screen reader unfriendly - describe the content",
           /\babove\b/i => "Positional reference - may not work for all users",
           /\bred\b.*\berror\b|\berror\b.*\bred\b/i => "Don't rely on color alone for meaning"
-        }
+        }.freeze
       }.freeze
 
       module_function

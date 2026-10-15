@@ -36,7 +36,7 @@ module Locallingo
         "cdd" => nil
       ).freeze
 
-      BUILTINS = { "business" => BUSINESS, "banking" => BANKING, "none" => {} }.freeze
+      BUILTINS = { "business" => BUSINESS, "banking" => BANKING, "none" => {}.freeze }.freeze
 
       attr_reader :terms
 
