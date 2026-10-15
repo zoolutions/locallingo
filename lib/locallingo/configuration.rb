@@ -165,8 +165,11 @@ module Locallingo
     end
 
     # ERB's default binding is TOPLEVEL_BINDING, which a non-main Ractor cannot
-    # reach; a blank object's binding evaluates the same templates.
-    def erb_binding = Object.new.instance_eval { binding }
+    # reach; a blank object's binding evaluates the same templates. The string
+    # form, not a block: a block would resolve constants from inside
+    # Locallingo::Configuration (`Settings` would be Locallingo::Settings), the
+    # string resolves them from the top level, as TOPLEVEL_BINDING did.
+    def erb_binding = Object.new.instance_eval("binding", __FILE__, __LINE__)
 
     def deep_merge(base, override)
       base.merge(override) do |_key, base_val, override_val|

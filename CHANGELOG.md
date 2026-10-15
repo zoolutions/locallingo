@@ -109,7 +109,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   hook ran. (#35)
 - The static quality checks and `Configuration` (its ERB included) run inside
   a non-main Ractor on Ruby 4.0: nested constants are frozen, and ERB no
-  longer evaluates on `TOPLEVEL_BINDING`. (#35)
+  longer evaluates on `TOPLEVEL_BINDING` (templates still resolve constants
+  from the top level, as the app sees them). (#35)
 
 ### Fixed (0.4.0)
 - `lingo sync` no longer destroys hand-edit protection: it now only refreshes

@@ -89,6 +89,17 @@ RSpec.describe Locallingo::Configuration do
     end
   end
 
+  it "resolves constants in ERB from the top level, as the app sees them" do
+    # An app's own `Settings` (the config gem's, say), not Locallingo::Settings.
+    stub_const("Settings", double(llm_provider: "anthropic"))
+    raw = <<~YAML
+      defaults:
+        provider: <%= Settings.llm_provider %>
+    YAML
+
+    expect(described_class.parse(raw, root_path: "/app").provider).to eq(:anthropic)
+  end
+
   describe ".parse" do
     let(:yaml) do
       <<~YAML
