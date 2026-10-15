@@ -1,0 +1,33 @@
+# What locallingo is held to by conformance-kit (zoolutions/phlex-reactive#363, #35).
+# `bundle exec conformance-kit check` runs doctor, the Ractor canary and the
+# strict audit, as the Conformance workflow does.
+audit:
+  require: [./spec/conformance_eager_load.rb]
+  # The gem's own namespace, plus its RuboCop cops.
+  namespace: [Locallingo, RuboCop::Cop::Locallingo]
+  strict_autoloads: true
+ractor:
+  test_command: bundle exec rspec --tag ractor
+probes:
+  gem_name: locallingo
+main_only:
+  - name: Locallingo::Translatable.@_dependencies
+    reason: >-
+      ActiveSupport::Concern's own module state, set by ActiveSupport when the
+      concern is defined at load on the main Ractor; read only when a model
+      includes the concern, at boot
+  - name: Locallingo::Translatable.@_included_block
+    reason: >-
+      ActiveSupport::Concern's own module state, set by ActiveSupport when the
+      concern is defined at load on the main Ractor; read only when a model
+      includes the concern, at boot
+  - name: RuboCop::Cop::Locallingo::RelativeI18nKey.@gem_requirements
+    reason: >-
+      RuboCop::Cop::Base's own class state, copied into every cop class by its
+      inherited hook at load; the cops run only inside the RuboCop process,
+      never in an app's Ractors
+  - name: RuboCop::Cop::Locallingo::StrftimeInView.@gem_requirements
+    reason: >-
+      RuboCop::Cop::Base's own class state, copied into every cop class by its
+      inherited hook at load; the cops run only inside the RuboCop process,
+      never in an app's Ractors
