@@ -10,7 +10,7 @@ group :development, :test do
   # ruby_llm allows faraday >= 1.10, and faraday-net_http 3.5.0 (which only
   # supports newer faraday) made Bundler resolve faraday 2.0.0, which never
   # registers the :net_http adapter. Keep the resolver on a current faraday.
-  gem "conformance-kit", "~> 0.1", require: false # concurrency conformance gates (zoolutions/phlex-reactive#363)
+  gem "conformance-kit", "~> 0.3", require: false # concurrency conformance gates (zoolutions/phlex-reactive#363)
   gem "faraday", ">= 2.14.4"
   gem "rake"
   gem "rspec"
