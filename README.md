@@ -152,8 +152,8 @@ Locallingo::QualityChecker.new(config:).check(locale: "en")
 ```
 
 `Locallingo::Configuration.parse(yaml, root_path:, package:)` resolves the same
-config from YAML text (ERB included) instead of `.locallingo.yml`. Either way
-the file is read when the configuration is built, never cached.
+config from YAML text (ERB included) instead of reading `.locallingo.yml`. A
+configuration loaded from the file reads it when it is built, never cached.
 
 ### Translating text that is not in locale files
 
