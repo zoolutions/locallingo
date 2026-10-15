@@ -48,13 +48,35 @@ RSpec.describe Locallingo::Settings do
           c.openai_api_key = "new-openai"
         end
       end
-      configuring.pop
+      # Bounded waits: a configure that raised before yielding fails here, not hangs.
+      expect(configuring.pop(timeout: 5)).to be(true)
       seen << Locallingo.settings.api_key_for(:anthropic)
       resume << true
-      writer.join
+      expect(writer.join(5)).to be(writer)
 
       expect(seen.pop).to be_nil
       expect(Locallingo.settings.api_key_for(:openai)).to eq("new-openai")
+    end
+
+    it "serializes concurrent calls, so neither drops the other's keys" do
+      configuring = Queue.new
+      resume = Queue.new
+      first = Thread.new do
+        Locallingo.configure do |c|
+          c.anthropic_api_key = "first"
+          configuring << true
+          resume.pop
+        end
+      end
+      expect(configuring.pop(timeout: 5)).to be(true)
+      second = Thread.new { Locallingo.configure { |c| c.openai_api_key = "second" } }
+      # Unserialized, the second call finishes now; serialized, it waits for the first.
+      Thread.pass until second.stop?
+      resume << true
+      [first, second].each { |thread| expect(thread.join(5)).to be(thread) }
+
+      expect(Locallingo.settings.api_key_for(:anthropic)).to eq("first")
+      expect(Locallingo.settings.api_key_for(:openai)).to eq("second")
     end
 
     it "keeps a callable key as is, resolved on every use" do
