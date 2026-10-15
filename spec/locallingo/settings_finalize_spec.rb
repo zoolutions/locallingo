@@ -1,0 +1,135 @@
+# frozen_string_literal: true
+
+# `Locallingo.settings` is boot-time state: written by `Locallingo.configure`
+# (a Rails initializer, or the CLI's `.locallingo.rb`), read on every LLM call.
+# Each configure publishes a frozen copy, so readers on any thread or Ractor
+# only ever see finished settings (#35).
+RSpec.describe Locallingo::Settings do
+  context "with the default settings" do
+    it_behaves_like "a boot-finalized configuration", readers: [Locallingo.method(:settings)]
+  end
+
+  context "with String keys set through configure" do
+    # An unfrozen String, as ENV.fetch or a credentials store returns it.
+    it_behaves_like "a boot-finalized configuration",
+                    readers: [Locallingo.method(:settings)],
+                    finalize: -> { Locallingo.configure { |c| c.anthropic_api_key = +"sk-ant-123" } }
+  end
+
+  context "with a String subclass key that carries mutable state" do
+    # A tagged secret: a String subclass with an ivar holding an unfrozen String.
+    it_behaves_like "a boot-finalized configuration",
+                    readers: [Locallingo.method(:settings)],
+                    finalize: lambda {
+                      key = Class.new(String) { attr_accessor :source }.new("sk-ant-123")
+                      key.source = +"vault"
+                      Locallingo.configure { |c| c.anthropic_api_key = key }
+                    }
+  end
+
+  describe "Locallingo.configure" do
+    it "publishes frozen settings" do
+      Locallingo.configure { |c| c.anthropic_api_key = +"sk-ant-123" }
+
+      expect(Locallingo.settings).to be_frozen
+      expect(Locallingo.settings.anthropic_api_key).to be_frozen.and eq("sk-ant-123")
+    end
+
+    it "stores a String subclass key as a plain frozen String" do
+      key = Class.new(String).new("sk-ant-123").freeze
+      Locallingo.configure { |c| c.anthropic_api_key = key }
+
+      expect(Locallingo.settings.anthropic_api_key).to be_instance_of(String).and be_frozen.and eq("sk-ant-123")
+    end
+
+    it "refuses writes outside configure" do
+      expect { Locallingo.settings.anthropic_api_key = "sneaky" }.to raise_error(FrozenError)
+    end
+
+    it "keeps earlier keys when called again" do
+      Locallingo.configure { |c| c.anthropic_api_key = "first" }
+      Locallingo.configure { |c| c.openai_api_key = "second" }
+
+      expect(Locallingo.settings.api_key_for(:anthropic)).to eq("first")
+      expect(Locallingo.settings.api_key_for(:openai)).to eq("second")
+    end
+
+    it "never exposes half-configured settings to a concurrent reader" do
+      seen = Queue.new
+      configuring = Queue.new
+      resume = Queue.new
+      writer = Thread.new do
+        Locallingo.configure do |c|
+          c.anthropic_api_key = "new-anthropic"
+          configuring << true
+          resume.pop
+          c.openai_api_key = "new-openai"
+        end
+      end
+      # Bounded waits: a configure that raised before yielding fails here, not hangs.
+      expect(configuring.pop(timeout: 5)).to be(true)
+      seen << Locallingo.settings.api_key_for(:anthropic)
+      resume << true
+      expect(writer.join(5)).to be(writer)
+
+      expect(seen.pop).to be_nil
+      expect(Locallingo.settings.api_key_for(:openai)).to eq("new-openai")
+    end
+
+    it "serializes concurrent calls, so neither drops the other's keys" do
+      configuring = Queue.new
+      resume = Queue.new
+      first = Thread.new do
+        Locallingo.configure do |c|
+          c.anthropic_api_key = "first"
+          configuring << true
+          resume.pop
+        end
+      end
+      expect(configuring.pop(timeout: 5)).to be(true)
+      second = Thread.new { Locallingo.configure { |c| c.openai_api_key = "second" } }
+      # Unserialized, the second call finishes now; serialized, it waits for the first.
+      Thread.pass until second.stop?
+      resume << true
+      [first, second].each { |thread| expect(thread.join(5)).to be(thread) }
+
+      expect(Locallingo.settings.api_key_for(:anthropic)).to eq("first")
+      expect(Locallingo.settings.api_key_for(:openai)).to eq("second")
+    end
+
+    it "keeps a callable key as is, resolved on every use" do
+      keys = %w[first-key rotated-key].each
+      Locallingo.configure { |c| c.anthropic_api_key = -> { keys.next } }
+
+      expect([Locallingo.settings.api_key_for(:anthropic), Locallingo.settings.api_key_for(:anthropic)])
+        .to eq(%w[first-key rotated-key])
+    end
+
+    it "boots with a callable key that closes over app state: frozen, main-Ractor only" do
+      log = StringIO.new
+      logger = Logger.new(log)
+      key = lambda do
+        logger.info("openai key read")
+        "sk-live"
+      end
+
+      expect { Locallingo.configure { |c| c.openai_api_key = key } }.not_to raise_error
+      expect(Locallingo.settings).to be_frozen
+      expect(Locallingo.settings.openai_api_key).to be(key)
+      expect(Ractor.shareable?(Locallingo.settings)).to be(false) if defined?(Ractor)
+      expect(Locallingo.settings.api_key_for(:openai)).to eq("sk-live")
+      expect(log.string).to include("openai key read")
+    end
+  end
+
+  describe "Locallingo.reset_settings!" do
+    it "restores frozen, blank defaults" do
+      Locallingo.configure { |c| c.anthropic_api_key = "key" }
+
+      Locallingo.reset_settings!
+
+      expect(Locallingo.settings).to be_frozen
+      expect(Locallingo.settings.api_key_for(:anthropic)).to be_nil
+    end
+  end
+end

@@ -46,7 +46,12 @@ end
 Put that in a `.locallingo.rb` file next to `.locallingo.yml` and the `lingo`
 CLI loads it on start — no Rails boot required. A key set via
 `Locallingo.configure` wins over one set through `RubyLLM.configure`, which
-wins over ENV. Locallingo never stores keys itself.
+wins over ENV. Locallingo never stores keys itself. `configure` publishes the
+settings frozen: change them by calling it again, never by writing to
+`Locallingo.settings`. Nothing else needs calling at boot. With String keys
+the settings are Ractor-shareable; a callable key is kept as it is (resolved on
+every use, so it may close over a logger or a vault client), which keeps the
+settings readable on the main Ractor only.
 
 ## Configuration
 
@@ -146,6 +151,10 @@ Locallingo::Manager.new(config:).validate           # => [violations]
 Locallingo::QualityChecker.new(config:).check(locale: "en")
 ```
 
+`Locallingo::Configuration.parse(yaml, root_path:, package:)` resolves the same
+config from YAML text (ERB included) instead of reading `.locallingo.yml`. A
+configuration loaded from the file reads it when it is built, never cached.
+
 ### Translating text that is not in locale files
 
 `Locallingo::Translator` runs the same prompt (rules, glossary, language guide),
@@ -170,9 +179,9 @@ result.translations # => { "title" => "Hallo", "intro" => "Etwas **Markdown**." 
 result.failed       # => keys that failed after retries
 ```
 
-- With a `context:`, every call uses that `RubyLLM::Context`'s config; the
-  global `RubyLLM.config` is never written, so tenants can translate
-  concurrently.
+- Every call runs on a `RubyLLM::Context`: the `context:` given, else one
+  built for that call from the resolved key. The global `RubyLLM.config` is
+  never written, so tenants can translate concurrently.
 - `MissingCredentialsError` is raised before any call when no key is found.
 - `translate.max_batch_chars` (or `max_batch_chars:`) limits the source
   characters per batch (a single longer value is sent alone, not split); `translate.pause` (or `pause:`) is the sleep after each
@@ -237,6 +246,10 @@ Locallingo::RecordTranslator.new(translator:)
   for the next run (your fallback to the source locale applies meanwhile).
 - Writes use `update_columns`; pass `write: ->(record, attributes) { … }` to
   bump a lock version or run validations.
+- `translates_content` freezes the declaration as it is made, at boot: the
+  column and state names, a String or Array locale option (as a frozen copy)
+  and the drift. Callables are kept as they are, so they may close over app
+  state; like the model itself, a declaration is read on the main Ractor.
 
 ## License
 

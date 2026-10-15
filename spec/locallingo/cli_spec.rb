@@ -8,7 +8,9 @@ RSpec.describe Locallingo::CLI do
     out = StringIO.new
     err = StringIO.new
     code = 0
-    Dir.chdir(root) do
+    # The CLI resolves its project from the process cwd (that is its contract); examples
+    # run one at a time and the block form restores the cwd before the next one.
+    Dir.chdir(root) do # rubocop:disable ThreadSafety/DirChdir
       original_out = $stdout
       original_err = $stderr
       $stdout = out

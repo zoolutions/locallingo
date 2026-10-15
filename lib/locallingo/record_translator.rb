@@ -18,7 +18,10 @@ module Locallingo
   # Records must be persisted and of one model (ids are the key prefix). This
   # class never loads ActiveRecord itself; records only need the concern.
   class RecordTranslator
+    # A capture-free lambda, made shareable where the engine has Ractors, so
+    # the constant is readable from any Ractor.
     DEFAULT_WRITE = ->(record, attributes) { record.update_columns(attributes) }
+                    .then { |write| defined?(::Ractor) ? ::Ractor.make_shareable(write) : write }
 
     # +write+ is called as `write.call(record, attributes)` inside the lock,
     # e.g. to bump a lock version or run validations (`record.update!(attributes)`).

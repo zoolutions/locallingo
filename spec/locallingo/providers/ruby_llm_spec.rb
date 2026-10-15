@@ -65,15 +65,22 @@ RSpec.describe Locallingo::Providers::RubyLLM do
   describe "#chat" do
     let(:conversation) { double }
     let(:response) { double(content: '{"greeting":"hallo"}') }
+    let(:contexts) { [] }
 
     before do
-      allow(RubyLLM).to receive(:chat).and_return(conversation)
+      allow(RubyLLM::Chat).to receive(:new) do |context: nil, **|
+        contexts << context
+        conversation
+      end
       allow(conversation).to receive_messages(with_instructions: conversation, ask: response)
     end
 
     def chat!
       provider.chat(model: "claude-x", instructions: "translate", payload: { "greeting" => "hello" })
     end
+
+    # The key the chat ran with, from the context it was built on.
+    def chat_key = contexts.last.config.anthropic_api_key
 
     it "marks the system prompt as a prompt cache boundary" do
       chat!
@@ -84,7 +91,7 @@ RSpec.describe Locallingo::Providers::RubyLLM do
     it "sets a cache boundary RubyLLM itself accepts on the system message" do
       Locallingo.configure { |c| c.anthropic_api_key = "test-key" }
       real_chat = nil
-      allow(RubyLLM).to receive(:chat).and_wrap_original do |original, **kwargs|
+      allow(RubyLLM::Chat).to receive(:new).and_wrap_original do |original, **kwargs|
         real_chat = original.call(**kwargs)
         allow(real_chat).to receive(:ask).and_return(response)
         real_chat
@@ -96,51 +103,68 @@ RSpec.describe Locallingo::Providers::RubyLLM do
       expect(system_message.cache_until_here?).to be(true)
     end
 
-    it "configures the provider API key from ENV before chatting" do
+    it "chats on a context of its own, never through the global RubyLLM.chat" do
+      allow(RubyLLM).to receive(:chat)
+
+      chat!
+
+      expect(contexts.last).to be_a(RubyLLM::Context)
+      expect(RubyLLM).not_to have_received(:chat)
+    end
+
+    it "chats with the ENV key and leaves the global config alone" do
       RubyLLM.config.anthropic_api_key = nil
       stub_const("ENV", ENV.to_h.merge("ANTHROPIC_API_KEY" => "env-key-123"))
 
       result = chat!
 
-      expect(RubyLLM.config.anthropic_api_key).to eq("env-key-123")
+      expect(chat_key).to eq("env-key-123")
+      expect(RubyLLM.config.anthropic_api_key).to be_nil
       expect(result).to eq({ "greeting" => "hallo" })
     end
 
-    it "does not clobber a key the host app already configured" do
+    it "keeps a key the host app already configured over ENV" do
       RubyLLM.config.anthropic_api_key = "explicit-app-key"
       stub_const("ENV", ENV.to_h.merge("ANTHROPIC_API_KEY" => "env-key-123"))
 
       chat!
 
+      expect(chat_key).to eq("explicit-app-key")
       expect(RubyLLM.config.anthropic_api_key).to eq("explicit-app-key")
     end
 
-    it "leaves configuration untouched when the ENV var is absent" do
+    it "leaves the key unset when the ENV var is absent" do
       RubyLLM.config.anthropic_api_key = nil
       stub_const("ENV", ENV.to_h.except("ANTHROPIC_API_KEY"))
 
       chat!
 
+      expect(chat_key).to be_nil
       expect(RubyLLM.config.anthropic_api_key).to be_nil
     end
 
-    it "pushes a Locallingo settings key over a host-configured one" do
+    it "uses a Locallingo settings key over a host-configured one without writing it back" do
       RubyLLM.config.anthropic_api_key = "explicit-app-key"
       Locallingo.configure { |c| c.anthropic_api_key = "settings-key" }
 
       chat!
 
-      expect(RubyLLM.config.anthropic_api_key).to eq("settings-key")
+      expect(chat_key).to eq("settings-key")
+      expect(RubyLLM.config.anthropic_api_key).to eq("explicit-app-key")
     end
 
     it "resolves a callable settings key at chat time" do
       RubyLLM.config.anthropic_api_key = nil
       stub_const("ENV", ENV.to_h.except("ANTHROPIC_API_KEY"))
-      Locallingo.configure { |c| c.anthropic_api_key = -> { "lazy-key" } }
+      keys = %w[first-key rotated-key]
+      Locallingo.configure { |c| c.anthropic_api_key = -> { keys.shift } }
 
       chat!
+      first = chat_key
+      chat!
 
-      expect(RubyLLM.config.anthropic_api_key).to eq("lazy-key")
+      expect([first, chat_key]).to eq(%w[first-key rotated-key])
+      expect(RubyLLM.config.anthropic_api_key).to be_nil
     end
   end
 

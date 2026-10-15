@@ -16,6 +16,6 @@ require_relative "../rubocop/cop/locallingo/strftime_in_view"
 module Locallingo
   # Absolute path to the cop defaults, for `inherit_gem: locallingo: <path>`.
   module RuboCop
-    CONFIG_DEFAULT = File.expand_path("../../config/default.yml", __dir__)
+    CONFIG_DEFAULT = File.expand_path("../../config/default.yml", __dir__).freeze
   end
 end

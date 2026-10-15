@@ -70,6 +70,60 @@ RSpec.describe Locallingo::Translatable, :active_record do
     end
   end
 
+  describe ".translates_content" do
+    # The declaration is boot-time state: written once in the model's class
+    # body, then only read.
+    it "freezes the declaration's names, locales and drift at boot" do
+      locales = %w[de sv]
+      klass = Class.new(Article) do
+        def self.name = "FrozenArticle"
+
+        translates_content :body, state: :translation_state, source_locale: +"en", target_locales: locales
+      end
+      definition = klass.locallingo_translatable
+
+      expect([definition.column, definition.state, definition.source_locale, definition.drift]).to all(be_frozen)
+      expect(definition.target_locales).to be_frozen.and eq(%w[de sv])
+      expect(definition.target_locales).to all(be_frozen)
+      expect(locales).not_to be_frozen
+    end
+
+    it "leaves String names the caller passed unfrozen" do
+      column = +"body"
+      state = +"translation_state"
+      klass = Class.new(Article) do
+        def self.name = "StringNamedArticle"
+
+        translates_content column, state:, source_locale: "en", target_locales: %w[de]
+      end
+
+      expect(klass.locallingo_translatable.column).to be_frozen.and eq("body")
+      expect(klass.locallingo_translatable.state).to be_frozen.and eq("translation_state")
+      expect(column).not_to be_frozen
+      expect(state).not_to be_frozen
+    end
+
+    it "boots with callables that close over app state, keeping them as they are" do
+      log = StringIO.new
+      logger = Logger.new(log)
+      filter = lambda do |path, _value|
+        logger.info("considered #{path}")
+        true
+      end
+      klass = Class.new(Article) do
+        def self.name = "LoggedArticle"
+
+        translates_content :body, state: :translation_state, source_locale: -> { written_in },
+                                  target_locales: -> { %w[de] }, translatable: filter
+      end
+      definition = klass.locallingo_translatable
+
+      expect(definition.translatable).to be(filter)
+      expect(klass.create!(body: { "en" => { "title" => "Hello" } }).translation_segments).to eq("title" => "Hello")
+      expect(log.string).to include("considered title")
+    end
+  end
+
   it "records state with a custom hasher" do
     klass = Class.new(Article) do
       def self.name = "HashedArticle"

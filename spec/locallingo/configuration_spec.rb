@@ -89,6 +89,57 @@ RSpec.describe Locallingo::Configuration do
     end
   end
 
+  it "resolves constants in ERB from the top level, as the app sees them" do
+    # An app's own `Settings` (the config gem's, say), not Locallingo::Settings.
+    stub_const("Settings", double(llm_provider: "anthropic"))
+    raw = <<~YAML
+      defaults:
+        provider: <%= Settings.llm_provider %>
+    YAML
+
+    expect(described_class.parse(raw, root_path: "/app").provider).to eq(:anthropic)
+  end
+
+  describe ".parse" do
+    let(:yaml) do
+      <<~YAML
+        defaults:
+          target_locales: [de]
+          provider: <%= "anthropic" %>
+        packages:
+          - path: engines/billing
+            context: "the billing engine"
+      YAML
+    end
+
+    it "resolves YAML text like a config file, ERB and shipped defaults included" do
+      config = described_class.parse(yaml, root_path: "/app")
+
+      expect(config.target_locales).to eq(%w[de])
+      expect(config.provider).to eq(:anthropic)
+      expect(config.batch_size).to eq(20)
+      expect(config.locales_dir).to eq("/app/config/locales")
+    end
+
+    it "applies a package entry from the text" do
+      config = described_class.parse(yaml, root_path: "/app", package: "engines/billing")
+
+      expect(config.context).to eq("the billing engine")
+      expect(config.locales_dir).to eq("/app/engines/billing/config/locales")
+    end
+
+    it "ignores the config file under root_path" do
+      with_app(locales: {}, config: { "target_locales" => %w[fr] }) do |root|
+        expect(described_class.parse(yaml, root_path: root).target_locales).to eq(%w[de])
+      end
+    end
+
+    it "names the text when a package is missing" do
+      expect { described_class.parse(yaml, root_path: "/app", package: "nope") }
+        .to raise_error(Locallingo::Error, /No package "nope" in the given YAML/)
+    end
+  end
+
   it "raises for an unknown package" do
     with_app(locales: {}, config: {}) do |root|
       expect { config_for(root, package: "nope").target_locales }

@@ -1,3 +1,7 @@
+# conformance-kit's Tier 1 gate: the rubocop-thread_safety cops (zoolutions/phlex-reactive#363).
+inherit_gem:
+  conformance-kit: config/rubocop.yml
+
 plugins:
   - rubocop-performance
   - rubocop-rake
@@ -64,6 +68,15 @@ Metrics/ParameterLists:
 Style/FormatStringToken:
   Exclude:
     - "spec/**/*"
+
+# These specs start threads on purpose: they prove two translators' credentials
+# stay apart, and configure never shows a reader half its settings, under
+# concurrency.
+ThreadSafety/NewThread:
+  Exclude:
+    - "spec/locallingo/settings_finalize_spec.rb"
+    - "spec/locallingo/providers/ruby_llm_spec.rb"
+    - "spec/locallingo/providers/ruby_llm_context_spec.rb"
 
 # The LLM provider stub deliberately stubs any instance so specs never hit the
 # network — the whole point of the support file.

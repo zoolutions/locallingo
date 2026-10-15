@@ -19,10 +19,11 @@ module Locallingo
     # that support caching (Anthropic, OpenAI-compatible) bill the repeated
     # prefix at the cached rate.
     #
-    # Given a `RubyLLM::Context` (`RubyLLM.context { |c| c.anthropic_api_key = … }`),
-    # every chat runs on that context's own configuration: the global
-    # `RubyLLM.config` is never written, so translators with different keys
-    # (one per tenant) can run concurrently.
+    # Every chat runs on a `RubyLLM::Context`: the one given
+    # (`RubyLLM.context { |c| c.anthropic_api_key = … }`), else a fresh one built
+    # for that chat from the resolved key. The global `RubyLLM.config` is never
+    # written, so translators with different keys (one per tenant) can run
+    # concurrently.
     class RubyLLM
       # Maps a RubyLLM provider symbol to the ENV var whose presence indicates
       # credentials are available, so we can fail fast with a clear message
@@ -82,30 +83,24 @@ module Locallingo
       private
 
       def new_chat(model)
-        return context.chat(model:, provider:, assume_model_exists: true) if context
-
-        configure_credentials!
-        ::RubyLLM.chat(model:, provider:, assume_model_exists: true)
+        (context || chat_context).chat(model:, provider:, assume_model_exists: true)
       end
 
-      # RubyLLM does not read provider API keys from ENV on its own, so a
-      # standalone CLI run (no Rails initializer to call RubyLLM.configure)
-      # would raise "Missing configuration for <provider>". Push the resolved
-      # key into RubyLLM's config: an explicit `Locallingo.configure` key wins
-      # (re-resolved every chat so callables stay live), then a key the host
-      # app already set, then the ENV fallback.
-      def configure_credentials!
-        return unless CREDENTIAL_ENV.key?(provider)
+      # A context of its own for one chat. `RubyLLM.context` copies the global
+      # config, so a key the host app set via RubyLLM.configure carries over;
+      # an explicit `Locallingo.configure` key wins over it (re-resolved every
+      # chat so callables stay live), and ENV fills in when neither is set
+      # (RubyLLM does not read provider keys from ENV on its own, so a
+      # standalone CLI run would otherwise raise "Missing configuration").
+      def chat_context
+        ::RubyLLM.context do |config|
+          setting = key_setting
+          next unless CREDENTIAL_ENV.key?(provider) && config.respond_to?("#{setting}=")
 
-        config = ::RubyLLM.config
-        setting = key_setting
-        return unless config.respond_to?(setting) && config.respond_to?("#{setting}=")
-
-        key = settings_api_key
-        return if key.nil? && !presence(config.public_send(setting)).nil?
-
-        key ||= env_api_key
-        config.public_send("#{setting}=", key) unless key.nil?
+          key = settings_api_key
+          key ||= env_api_key if presence(config.public_send(setting)).nil?
+          config.public_send("#{setting}=", key) unless key.nil?
+        end
       end
 
       # Key resolution across sources, in precedence order. Used by
