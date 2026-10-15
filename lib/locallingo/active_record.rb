@@ -36,13 +36,13 @@ module Locallingo
 
     class_methods do
       # The declaration is frozen as it is made, at boot: the column and state
-      # names, a String/Symbol/Array locale option (a frozen copy; the caller's
-      # own object is left alone) and the Drift. Callables (locale options,
+      # names and a String/Symbol/Array locale option (frozen copies; the
+      # caller's own objects are left alone), and the Drift. Callables (locale options,
       # translatable:, hasher:) are kept as they are, so a declaration holding
       # one is read on the main Ractor only, like the model itself.
       def translates_content(column, state:, source_locale:, target_locales:, translatable: nil, hasher: nil)
         self.locallingo_translatable = Definition.new(
-          column: column.to_s.freeze, state: state.to_s.freeze,
+          column: Translatable.frozen_option(column.to_s), state: Translatable.frozen_option(state.to_s),
           source_locale: Translatable.frozen_option(source_locale),
           target_locales: Translatable.frozen_option(target_locales),
           translatable: translatable || ->(_path, _value) { true },

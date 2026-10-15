@@ -88,6 +88,21 @@ RSpec.describe Locallingo::Translatable, :active_record do
       expect(locales).not_to be_frozen
     end
 
+    it "leaves String names the caller passed unfrozen" do
+      column = +"body"
+      state = +"translation_state"
+      klass = Class.new(Article) do
+        def self.name = "StringNamedArticle"
+
+        translates_content column, state:, source_locale: "en", target_locales: %w[de]
+      end
+
+      expect(klass.locallingo_translatable.column).to be_frozen.and eq("body")
+      expect(klass.locallingo_translatable.state).to be_frozen.and eq("translation_state")
+      expect(column).not_to be_frozen
+      expect(state).not_to be_frozen
+    end
+
     it "boots with callables that close over app state, keeping them as they are" do
       log = StringIO.new
       logger = Logger.new(log)
