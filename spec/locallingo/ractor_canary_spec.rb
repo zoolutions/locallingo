@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 # The pure core, run inside a non-main Ractor (Ruby 4.0+; the kit skips these
-# with a reason below that): the static quality checks on literal strings and
-# the drift decisions over literal state entries. No locale files, no LLM
-# (#35). `conformance-kit check` runs them with `--tag ractor`.
+# with a reason below that): the static quality checks on literal strings, the
+# drift decisions over literal state entries, and configuration parsed from a
+# literal YAML string. No app files, no LLM (#35). `conformance-kit check` runs
+# them with `--tag ractor`.
 #
 # Each block is capture-free: values come in through inputs:, everything else
 # through constants.
@@ -46,5 +47,27 @@ RSpec.describe Locallingo do # rubocop:disable RSpec/SpecFilePathFormat -- spans
                       { "title" => "Hallo", "steps" => [{ "text" => "Öffne die App" }] },
                       { "source_hash" => "00000000", "target_hash" => "ffffffff" }
                     ]
+  end
+
+  context "with configuration parsed from a literal YAML string" do
+    let(:subject_call) do
+      lambda do |yaml|
+        [nil, "engines/billing"].map do |package|
+          config = Locallingo::Configuration.parse(yaml, root_path: "/app", package:)
+          [config.data, config.provider, config.target_locales, config.locales_dir, config.strict_types(:strict)]
+        end
+      end
+    end
+
+    it_behaves_like "runs inside a non-main Ractor", inputs: [<<~YAML]
+      defaults:
+        target_locales: [de, sv]
+        provider: <%= "anthropic" %>
+        glossary:
+          entity: "business account holder"
+      packages:
+        - path: engines/billing
+          target_locales: [de]
+    YAML
   end
 end

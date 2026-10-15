@@ -14,6 +14,9 @@ module Locallingo
   #
   # Typed readers expose everything the Manager/QualityChecker/CLI need, so no
   # other class parses raw config hashes.
+  #
+  # The file is read when a Configuration is built (the CLI builds one per run)
+  # and never cached in the process, so an edit applies to the next run.
   class Configuration
     CONFIG_FILENAMES = %w[.locallingo.yml .locallingo.yaml].freeze
     DEFAULT_CONFIG_PATH = File.expand_path("../../config/locallingo.default.yml", __dir__).freeze
@@ -26,10 +29,18 @@ module Locallingo
       new(root_path:, package:)
     end
 
-    def initialize(root_path: Dir.pwd, package: nil, data: nil)
+    # Resolve config from YAML +text+ (what a `.locallingo.yml` holds, ERB
+    # included) instead of the file under +root_path+, merged over the shipped
+    # defaults the same way.
+    def self.parse(text, root_path: Dir.pwd, package: nil)
+      new(root_path:, package:, source: text)
+    end
+
+    # +source+ is YAML text read in place of the config file (see .parse).
+    def initialize(root_path: Dir.pwd, package: nil, data: nil, source: nil)
       @root_path = File.expand_path(root_path)
       @package = package
-      @data = data || resolve
+      @data = data || resolve(source)
     end
 
     # --- locations -----------------------------------------------------------
@@ -113,9 +124,10 @@ module Locallingo
     def dig(*keys) = data.dig(*keys)
 
     # Merge: shipped defaults <- user `defaults:` <- selected `packages:` entry.
-    def resolve
-      merged = deep_merge(shipped_defaults, user_defaults)
-      merged = deep_merge(merged, package_overrides) if package
+    def resolve(source)
+      document, origin = user_config(source)
+      merged = deep_merge(shipped_defaults, document.fetch("defaults", {}) || {})
+      merged = deep_merge(merged, package_overrides(document, origin)) if package && origin
       merged
     end
 
@@ -123,20 +135,19 @@ module Locallingo
       load_yaml(DEFAULT_CONFIG_PATH).fetch("defaults", {})
     end
 
-    def user_defaults
-      file = config_file
-      return {} unless file
+    # The user's config and where it came from: the +source+ text, else the
+    # config file under root_path, else nothing.
+    def user_config(source)
+      return [parse_yaml(source), "the given YAML"] if source
 
-      load_yaml(file).fetch("defaults", {}) || {}
+      file = config_file
+      file ? [load_yaml(file), file] : [{}, nil]
     end
 
-    def package_overrides
-      file = config_file
-      return {} unless file
-
-      packages = load_yaml(file).fetch("packages", []) || []
+    def package_overrides(document, origin)
+      packages = document.fetch("packages", []) || []
       entry = packages.find { |p| p["path"] == package }
-      raise Error, "No package #{package.inspect} in #{file}" unless entry
+      raise Error, "No package #{package.inspect} in #{origin}" unless entry
 
       entry.except("path")
     end
@@ -147,9 +158,15 @@ module Locallingo
         .find { |path| File.exist?(path) }
     end
 
-    def load_yaml(path)
-      YAML.safe_load(ERB.new(File.read(path)).result, aliases: true) || {}
+    def load_yaml(path) = parse_yaml(File.read(path))
+
+    def parse_yaml(text)
+      YAML.safe_load(ERB.new(text).result(erb_binding), aliases: true) || {}
     end
+
+    # ERB's default binding is TOPLEVEL_BINDING, which a non-main Ractor cannot
+    # reach; a blank object's binding evaluates the same templates.
+    def erb_binding = Object.new.instance_eval { binding }
 
     def deep_merge(base, override)
       base.merge(override) do |_key, base_val, override_val|

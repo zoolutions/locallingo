@@ -148,6 +148,10 @@ Locallingo::Manager.new(config:).validate           # => [violations]
 Locallingo::QualityChecker.new(config:).check(locale: "en")
 ```
 
+`Locallingo::Configuration.parse(yaml, root_path:, package:)` resolves the same
+config from YAML text (ERB included) instead of `.locallingo.yml`. Either way
+the file is read when the configuration is built, never cached.
+
 ### Translating text that is not in locale files
 
 `Locallingo::Translator` runs the same prompt (rules, glossary, language guide),
