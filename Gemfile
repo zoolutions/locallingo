@@ -7,6 +7,7 @@ gemspec
 group :development, :test do
   # Only for the opt-in `locallingo/active_record` concern's specs (in-memory SQLite).
   gem "activerecord", ">= 7.1"
+  gem "async", require: false # runs conformance-kit's "fiber-safe under an Async reactor" example
   # ruby_llm allows faraday >= 1.10, and faraday-net_http 3.5.0 (which only
   # supports newer faraday) made Bundler resolve faraday 2.0.0, which never
   # registers the :net_http adapter. Keep the resolver on a current faraday.
@@ -18,6 +19,7 @@ group :development, :test do
   gem "rubocop-performance", require: false
   gem "rubocop-rake", require: false
   gem "rubocop-rspec", require: false
+  gem "rubocop-thread_safety", ">= 0.8", require: false # conformance-kit's config/rubocop.yml
   gem "simplecov", require: false
   gem "sqlite3", ">= 2.1"
 end
