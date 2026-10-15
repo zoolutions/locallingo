@@ -42,20 +42,32 @@ module Locallingo
     Configuration.load(root_path:, package:)
   end
 
+  # Boot-time state, finalized: always a frozen Settings, so any thread or
+  # Ractor reads finished settings and only `configure` replaces them. With
+  # String keys (or none) it is Ractor-shareable; a callable key is not, so it
+  # keeps the settings readable on the main Ractor only.
+  #
+  # rubocop:disable ThreadSafety/ClassInstanceVariable -- @settings is written only by configure and reset_settings!, at boot on the main Ractor, and always holds a frozen Settings
+  @settings = Settings.new.freeze
+
   # Code-level settings (provider credentials) — see Locallingo::Settings.
-  def self.settings
-    @settings ||= Settings.new
-  end
+  def self.settings = @settings
 
   # Configure the gem from Ruby — the credentials path for apps whose keys
   # don't live in ENV (call it from a Rails initializer or a `.locallingo.rb`
   # setup file next to `.locallingo.yml`; the CLI loads the latter on start).
+  # Yields a copy of the current settings, then publishes it frozen in one
+  # assignment: a concurrent reader sees the old settings or the new, never
+  # half of them. Calling it again keeps the keys it does not set.
   def self.configure
-    yield settings
-    settings
+    draft = settings.dup
+    yield draft
+    @settings = draft.freeze
   end
 
+  # Back to frozen, blank defaults (for tests).
   def self.reset_settings!
-    @settings = nil
+    @settings = Settings.new.freeze
   end
+  # rubocop:enable ThreadSafety/ClassInstanceVariable
 end

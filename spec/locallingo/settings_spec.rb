@@ -54,14 +54,14 @@ RSpec.describe Locallingo::Settings do
   end
 
   describe "Locallingo.configure" do
-    it "yields the memoized settings and returns them" do
+    it "yields settings and returns the ones it published" do
       returned = Locallingo.configure { |c| c.anthropic_api_key = "block-key" }
 
       expect(returned).to be(Locallingo.settings)
       expect(Locallingo.settings.anthropic_api_key).to eq("block-key")
     end
 
-    it "memoizes settings across calls and resets with reset_settings!" do
+    it "returns the same settings across calls and resets with reset_settings!" do
       first = Locallingo.settings
       expect(Locallingo.settings).to be(first)
 

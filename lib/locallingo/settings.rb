@@ -12,10 +12,20 @@ module Locallingo
   #
   # Callables are resolved lazily on every use (never memoized), so keys can
   # come from sources that aren't ready at configure time or that rotate.
+  #
+  # A String key is stored as a frozen copy, so settings frozen by
+  # `Locallingo.configure` are Ractor-shareable; a callable is kept as is.
   class Settings
     PROVIDERS = %i[openai anthropic gemini deepseek openrouter].freeze
 
-    attr_accessor(*PROVIDERS.map { |name| :"#{name}_api_key" })
+    attr_reader(*PROVIDERS.map { |name| :"#{name}_api_key" })
+
+    PROVIDERS.each do |name|
+      define_method(:"#{name}_api_key=") do |value|
+        value = value.dup.freeze if value.is_a?(String) && !value.frozen?
+        instance_variable_set(:"@#{name}_api_key", value)
+      end
+    end
 
     # The usable key for +provider+: callables are called, results stripped,
     # and blank or unknown-provider values come back as nil.

@@ -70,9 +70,11 @@ Style/FormatStringToken:
     - "spec/**/*"
 
 # These specs start threads on purpose: they prove two translators' credentials
-# stay apart when they run concurrently.
+# stay apart, and configure never shows a reader half its settings, under
+# concurrency.
 ThreadSafety/NewThread:
   Exclude:
+    - "spec/locallingo/settings_finalize_spec.rb"
     - "spec/locallingo/providers/ruby_llm_spec.rb"
     - "spec/locallingo/providers/ruby_llm_context_spec.rb"
 

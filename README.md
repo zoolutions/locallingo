@@ -46,7 +46,9 @@ end
 Put that in a `.locallingo.rb` file next to `.locallingo.yml` and the `lingo`
 CLI loads it on start — no Rails boot required. A key set via
 `Locallingo.configure` wins over one set through `RubyLLM.configure`, which
-wins over ENV. Locallingo never stores keys itself.
+wins over ENV. Locallingo never stores keys itself. `configure` publishes the
+settings frozen: change them by calling it again, never by writing to
+`Locallingo.settings`.
 
 ## Configuration
 
