@@ -16,12 +16,30 @@ RSpec.describe Locallingo::Settings do
                     finalize: -> { Locallingo.configure { |c| c.anthropic_api_key = +"sk-ant-123" } }
   end
 
+  context "with a String subclass key that carries mutable state" do
+    # A tagged secret: a String subclass with an ivar holding an unfrozen String.
+    it_behaves_like "a boot-finalized configuration",
+                    readers: [Locallingo.method(:settings)],
+                    finalize: lambda {
+                      key = Class.new(String) { attr_accessor :source }.new("sk-ant-123")
+                      key.source = +"vault"
+                      Locallingo.configure { |c| c.anthropic_api_key = key }
+                    }
+  end
+
   describe "Locallingo.configure" do
     it "publishes frozen settings" do
       Locallingo.configure { |c| c.anthropic_api_key = +"sk-ant-123" }
 
       expect(Locallingo.settings).to be_frozen
       expect(Locallingo.settings.anthropic_api_key).to be_frozen.and eq("sk-ant-123")
+    end
+
+    it "stores a String subclass key as a plain frozen String" do
+      key = Class.new(String).new("sk-ant-123").freeze
+      Locallingo.configure { |c| c.anthropic_api_key = key }
+
+      expect(Locallingo.settings.anthropic_api_key).to be_instance_of(String).and be_frozen.and eq("sk-ant-123")
     end
 
     it "refuses writes outside configure" do
