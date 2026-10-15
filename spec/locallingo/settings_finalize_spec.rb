@@ -64,6 +64,22 @@ RSpec.describe Locallingo::Settings do
       expect([Locallingo.settings.api_key_for(:anthropic), Locallingo.settings.api_key_for(:anthropic)])
         .to eq(%w[first-key rotated-key])
     end
+
+    it "boots with a callable key that closes over app state: frozen, main-Ractor only" do
+      log = StringIO.new
+      logger = Logger.new(log)
+      key = lambda do
+        logger.info("openai key read")
+        "sk-live"
+      end
+
+      expect { Locallingo.configure { |c| c.openai_api_key = key } }.not_to raise_error
+      expect(Locallingo.settings).to be_frozen
+      expect(Locallingo.settings.openai_api_key).to be(key)
+      expect(Ractor.shareable?(Locallingo.settings)).to be(false) if defined?(Ractor)
+      expect(Locallingo.settings.api_key_for(:openai)).to eq("sk-live")
+      expect(log.string).to include("openai key read")
+    end
   end
 
   describe "Locallingo.reset_settings!" do
