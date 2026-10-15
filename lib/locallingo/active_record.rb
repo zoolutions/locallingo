@@ -29,7 +29,9 @@ module Locallingo
     Definition = Data.define(:column, :state, :source_locale, :target_locales, :translatable, :drift)
 
     included do
-      class_attribute :locallingo_translatable, instance_writer: false
+      # The model's declaration: written once by translates_content in its class
+      # body at boot (main Ractor), and only read after that.
+      class_attribute :locallingo_translatable, instance_writer: false # rubocop:disable ThreadSafety/ClassAndModuleAttributes
     end
 
     class_methods do
