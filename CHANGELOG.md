@@ -38,6 +38,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `lingo translate --include-manual` lets `--force-key` overwrite keys flagged
   `manual`; each overwritten key is named on stderr and its `manual` flag
   survives. (#11, #30)
+- `Locallingo::Configuration.parse(text, root_path:, package:)` resolves
+  config from YAML text (ERB included) instead of `.locallingo.yml`, merged
+  over the shipped defaults the same way. (#35)
 
 ### Changed
 - `lingo translate --force-key` skips keys flagged `manual` (hand-edited, via
@@ -68,6 +71,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   reused by every batch of a locale, so providers with prompt caching
   (Anthropic, OpenAI-compatible) bill that repeated prefix at the cached rate. Anthropic only caches prompts
   above its minimum length (~1024 tokens); shorter prompts are sent uncached.
+- `Locallingo.configure` publishes the settings frozen, in one assignment: a
+  concurrent reader sees the old settings or the new, never half of them.
+  Change them by calling `configure` again; writing to `Locallingo.settings`
+  directly raises `FrozenError`. String keys are stored as frozen copies, so
+  the settings are Ractor-shareable unless a key is a callable. (#35)
 
 ### Fixed
 - `lingo quality --ai` includes the locale's `language_guides` entry in the
@@ -92,6 +100,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   recomputed — that would silently absorb hand-edit drift.
 - The `duplicate_values` validator reports findings under the configured
   `source_locale` instead of a hard-coded `en`. (#15)
+- Without a `RubyLLM::Context`, a translation or quality-review call no
+  longer writes the resolved key into the process-global `RubyLLM.config`;
+  each call runs on a context of its own. Two translators with different keys
+  in one process could race, and one chat with the other's key. (#35)
+- `after_translate` hooks run via `system(command, chdir:)` instead of inside
+  `Dir.chdir`, which moved the working directory of the whole process while a
+  hook ran. (#35)
+- The static quality checks and `Configuration` (its ERB included) run inside
+  a non-main Ractor on Ruby 4.0: nested constants are frozen, and ERB no
+  longer evaluates on `TOPLEVEL_BINDING`. (#35)
 
 ### Fixed (0.4.0)
 - `lingo sync` no longer destroys hand-edit protection: it now only refreshes
