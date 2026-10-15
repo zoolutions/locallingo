@@ -21,15 +21,17 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   are frozen at load, and `Locallingo.configure` (a Rails initializer, or the
   CLI's `.locallingo.rb`) publishes them frozen, in one assignment, so a
   concurrent reader sees the old settings or the new, never half of them.
-  Change them by calling `configure` again: **writing to
+  Concurrent `configure` calls run one at a time, so neither drops the
+  other's keys. Change them by calling `configure` again: **writing to
   `Locallingo.settings` directly now raises `FrozenError`.** String keys are
-  stored as frozen copies, so the settings are Ractor-shareable. A callable
+  stored as frozen plain String copies (a String subclass or its ivars are not
+  kept), so the settings are Ractor-shareable. A callable
   key is kept as it is and never makes `configure` raise, even when it closes
   over app state (a logger, a vault client); it keeps the settings readable
   on the main Ractor only. (#35)
 - `translates_content` freezes its declaration at boot: the column and state
-  names, a String or Array `source_locale:`/`target_locales:` (as a frozen
-  copy; the object passed in is not frozen) and the drift. **Mutating them
+  names and a String or Array `source_locale:`/`target_locales:` (as frozen
+  copies; the objects passed in are not frozen), and the drift. **Mutating them
   through `locallingo_translatable` now raises `FrozenError`.** Callables
   (`source_locale:`, `target_locales:`, `translatable:`, `hasher:`) are kept
   as they are and never make the declaration raise. (#35)
