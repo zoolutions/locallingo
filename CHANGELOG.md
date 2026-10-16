@@ -4,7 +4,9 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0]
+## [Unreleased]
+
+## [0.6.0] - 2026-10-15
 
 ### Added
 - `Locallingo::Configuration.parse(text, root_path:, package:)` resolves
@@ -49,7 +51,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   longer evaluates on `TOPLEVEL_BINDING` (templates still resolve constants
   from the top level, as the app sees them). (#35)
 
-## [Unreleased]
+## [0.5.1] - 2026-10-13
 
 ### Added
 - `Locallingo::Translator#translate(texts, from:, to:, style:, instructions:)`
@@ -73,6 +75,10 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `require "locallingo/active_record"` adds `Locallingo::Translatable`
   (`translates_content`), and `Locallingo::RecordTranslator` translates many
   records in one batched call, writing each under its row lock. (#33)
+
+## [0.5.0] - 2026-10-09
+
+### Added
 - `lingo quality --prefix yoga.` checks only the keys under a prefix, in both
   the static checks and the AI pass. A prefix that matches nothing exits `1`. (#10, #29)
 - `lingo quality --key a.b` (repeatable) checks exactly the named keys, and the
@@ -126,29 +132,34 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   and column inside the fence instead of the fence at line 1. (#25)
 - The translation prompt asks the model to escape `"` inside values as `\"`
   and keep typographic quotes (“ ” „ ‚ « ») as they appear in the source. (#25)
+- The `duplicate_values` validator reports findings under the configured
+  `source_locale` instead of a hard-coded `en`. (#15)
+
+## [0.4.3] - 2026-08-23
+
+### Changed
+- Allow `ruby_llm` 2.x (dependency constraint widened from `< 2` to `< 3`). The
+  gem only uses RubyLLM's stable chat API and guarded config accessors, so a
+  host app can take the RubyLLM 2.0 bump without waiting on Locallingo.
+
+## [0.4.2] - 2026-08-18
+
+### Fixed
 - State files are written with a trailing final newline, so the output is
   POSIX-conformant and files that already end with a newline are no longer
   rewritten with newline-only diffs. One-time effect after upgrading: each
   state file gets a single newline-adding rewrite, then stabilizes. (#7)
+
+## [0.4.1] - 2026-07-16
+
+### Fixed
 - `lingo sync` backfills a missing `target_hash` from the current target value,
   so hand-added translations (written straight into the YAML, never passing
   through `translate` or `accept-edits`) get a baseline and the `manual_edits`
   validator can watch them. An existing `target_hash` is still never
   recomputed — that would silently absorb hand-edit drift.
-- The `duplicate_values` validator reports findings under the configured
-  `source_locale` instead of a hard-coded `en`. (#15)
 
-### Fixed (0.4.0)
-- `lingo sync` no longer destroys hand-edit protection: it now only refreshes
-  each entry's `source_hash` and preserves `target_hash` and `manual: true`
-  (the pre-extraction `bin/translate` behavior). Previously a single sync wiped
-  both fields for every key, blinding the `manual_edits` validator and causing
-  `manual` flags to flip back and forth across branches.
-- `translate --force-key` on a `manual`-flagged key keeps the flag. The value is
-  still retranslated on explicit request, but no command removes `manual: true`
-  anymore — unprotecting a key requires editing the state JSON by hand.
-- State files whose content is unchanged are no longer rewritten, so operations
-  never touch `.i18n-state/` files for unrelated namespaces.
+## [0.4.0] - 2026-07-16
 
 ### Changed
 - Unscoped `lingo accept-edits` now accepts only the keys the `manual_edits`
@@ -160,6 +171,20 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   violations on manual keys tell you to update the value by hand and re-accept
   it rather than force-translating over curated text.
 
+### Fixed
+- `lingo sync` no longer destroys hand-edit protection: it now only refreshes
+  each entry's `source_hash` and preserves `target_hash` and `manual: true`
+  (the pre-extraction `bin/translate` behavior). Previously a single sync wiped
+  both fields for every key, blinding the `manual_edits` validator and causing
+  `manual` flags to flip back and forth across branches.
+- `translate --force-key` on a `manual`-flagged key keeps the flag. The value is
+  still retranslated on explicit request, but no command removes `manual: true`
+  anymore — unprotecting a key requires editing the state JSON by hand.
+- State files whose content is unchanged are no longer rewritten, so operations
+  never touch `.i18n-state/` files for unrelated namespaces.
+
+## [0.3.0] - 2026-07-15
+
 ### Added
 - `Locallingo.configure { |c| c.anthropic_api_key = ... }` — gem-level provider
   credentials as Strings or lazy callables, for apps whose keys don't live in
@@ -168,6 +193,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `.locallingo.rb` setup file: the CLI loads it from the project root before
   dispatch, so standalone `lingo` runs can configure credentials without
   booting Rails.
+
+## [0.2.2] - 2026-07-13
+
+### Fixed
+- `lingo translate` and `lingo quality --ai` read the provider API key from
+  ENV (e.g. `ANTHROPIC_API_KEY`) when RubyLLM has none configured; a key
+  configured by the host app still wins. (#2)
+
+## [0.2.1] - 2026-07-07
+
+No gem changes (documentation site only).
+
+## [0.2.0] - 2026-07-07
+
+### Added
 - Initial extraction from the `bin/translate` toolchain into a standalone gem.
 - `lingo` CLI with subcommands: `status`, `translate`, `validate`, `quality`,
   `fix-quality`, `accept-edits`, `hash`, `sync`. Legacy `--flag` forms still work
