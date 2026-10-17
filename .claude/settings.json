@@ -3,5 +3,15 @@
   "advisorModel": "fable",
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+  },
+  "extraKnownMarketplaces": {
+    "zoolutions": {
+      "source": { "source": "github", "repo": "zoolutions/claude-plugins" },
+      "autoUpdate": true
+    }
+  },
+  "enabledPlugins": {
+    "flow@zoolutions": true,
+    "ruby-gem@zoolutions": true
   }
 }
