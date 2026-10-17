@@ -29,7 +29,7 @@ i18n-tasks — packaged as a gem (ships the `lingo` CLI).
 2. **State safety first**: state corruption raises (`Locallingo::Error`) rather than silently losing drift data
 3. **Config-driven behavior**: anything app-specific belongs in `.locallingo.yml` (`defaults` + per-`packages` overrides), never hardcoded
 4. **Backwards compatibility**: legacy CLI flag forms (`lingo --translate`, …) keep working with a deprecation notice
-5. **Coverage**: 80% minimum; 100% for `StateStore`, the Manager sync/accept-edits paths (manual-flag preservation), the validators and Configuration/Settings resolution. Errors raise `Locallingo::Error` with an actionable message
+5. **Coverage**: target 80%+ (SimpleCov reports it; no minimum is enforced); aim for 100% on `StateStore`, the Manager sync/accept-edits paths (manual-flag preservation), the validators and Configuration/Settings resolution. Errors raise `Locallingo::Error` with an actionable message
 
 ## Commands
 
@@ -101,9 +101,9 @@ labels kit (canonical copy in docs-kit): never edit them in place.
 - **Review bot:** cubic
 - **Merge:** squash — `gh pr merge <PR> --squash --delete-branch`
 - **PR contract:** `## Summary`, `## Test plan`; labels per Labels above; no screenshot rule
-- **Conflicts:** `CHANGELOG.md` — keep both sides' bullets under one set of subheads; `lib/locallingo/version.rb` — a conflict means the branch bumped on purpose: keep it if the branch's commits say so, else take main's; `docs/bun.lock` — take main's, then `bun install --cwd docs`; `config/default.yml`, `config/locallingo.default.yml` — keep both sides' keys, valid YAML. `docs/` has no PR CI: review its merges by hand
+- **Conflicts:** `CHANGELOG.md` — keep both sides' bullets under one set of subheads; `lib/locallingo/version.rb` — take main's (PRs never touch it); `docs/bun.lock` — take main's, then `bun install --cwd docs`; `config/default.yml`, `config/locallingo.default.yml` — keep both sides' keys, valid YAML. `docs/` has no PR CI: review its merges by hand
 - **Worktree setup:** `bundle install` (`Gemfile.lock` is gitignored); `bun install --cwd docs` only for docs work; undo with `git worktree remove`
-- **Release:** `bin/release <v>` (→ `rake release[x.y.z]`, maintainer; PRs never touch `version.rb`); changelog `CHANGELOG.md`, heading `## [X.Y.Z] - YYYY-MM-DD` under `## [Unreleased]`; prep none; lockfiles none tracked; docs `deploy-docs.yml` on release; human none
+- **Release:** `bin/release <v>` (→ `rake release[x.y.z]`, maintainer; PRs never touch `version.rb`); changelog `CHANGELOG.md`, heading `## [X.Y.Z] - YYYY-MM-DD` under `## [Unreleased]`; prep none; Ruby `Gemfile.lock` is ignored (`docs/bun.lock` is tracked); docs `deploy-docs.yml` on release; human none
 - **Main health:** `gh run list --branch main --workflow CI --limit 1 --json conclusion --jq '.[0].conclusion'`
 - **Upstream:** libraries we own `zoolutions/*`; scrub none
 - **Bench:** none
