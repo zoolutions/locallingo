@@ -13,7 +13,8 @@ module Locallingo
   # its row lock, after re-checking that its source is unchanged and the
   # target is still due: a source edited or a target hand-written while the
   # model answered is skipped and left for the next run. A record with any
-  # failed segment is not written; it stays due and its paths are reported.
+  # failed segment (including one whose tokens did not survive, with
+  # `placeholders:`) is not written; it stays due and its paths are reported.
   #
   # Records must be persisted and of one model (ids are the key prefix). This
   # class never loads ActiveRecord itself; records only need the concern.
@@ -30,7 +31,8 @@ module Locallingo
       @write = write
     end
 
-    def call(records, to:, style: :ui, instructions: nil, force: false, include_manual: false)
+    # +placeholders+ is passed to Translator#translate (nil: its default).
+    def call(records, to:, style: :ui, instructions: nil, force: false, include_manual: false, placeholders: nil)
       @locale = to.to_s
       @force = force
       @include_manual = include_manual
@@ -39,7 +41,7 @@ module Locallingo
       due, empty = records.select { |record| due?(record) }.partition { |record| record.translation_segments.any? }
       @result[:skipped].concat(empty.map(&:id))
       due.group_by(&:translation_source_locale).each do |from, group|
-        translate_group(group, from:, style:, instructions:)
+        translate_group(group, from:, style:, instructions:, placeholders:)
       end
       @result
     end
@@ -48,7 +50,7 @@ module Locallingo
 
     def due?(record) = record.translation_due?(@locale, force: @force, include_manual: @include_manual)
 
-    def translate_group(records, from:, style:, instructions:)
+    def translate_group(records, from:, style:, instructions:, placeholders:)
       digests = records.to_h { |record| [record, record.translation_source_digest] }
       owners = {}
       segments = records.each_with_object({}) do |record, all|
@@ -61,7 +63,7 @@ module Locallingo
         end
       end
 
-      result = @translator.translate(segments, from:, to: @locale, style:, instructions:)
+      result = @translator.translate(segments, from:, to: @locale, style:, instructions:, placeholders:)
       records.each do |record|
         translations = own(result.translations, owners, record).to_h
         failed = own(result.failed.to_h { |key| [key, nil] }, owners, record).map(&:first)

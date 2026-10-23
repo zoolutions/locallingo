@@ -11,6 +11,8 @@ module Locallingo
   #   down to single keys, so a bad value costs only its own key.
   # - Keys the model omitted are re-batched for a few rounds; keys whose own
   #   one-key reply could not be parsed are not.
+  # - A value the `accept` callable rejects is treated like an omitted key: it
+  #   joins those rounds, and is reported with its reason if still rejected.
   class BatchTranslator
     MAX_RETRIES = 3
     MAX_MISSING_RETRIES = 2
@@ -21,28 +23,34 @@ module Locallingo
     # A batch closes at `batch_size` keys or `max_batch_chars` characters of
     # source text, whichever comes first; a single oversized value goes alone.
     # `pause` is the sleep after each batch (0 in a background job).
-    def initialize(provider:, model:, batch_size:, log:, max_batch_chars: nil, pause: BASE_SLEEP_DURATION)
+    # `accept` is called as `accept.call(key, source_text, translated_text)`
+    # and returns true to keep the value, or a Hash: the rejection reason.
+    def initialize(provider:, model:, batch_size:, log:, max_batch_chars: nil, pause: BASE_SLEEP_DURATION,
+                   accept: nil)
       @provider = provider
       @model = model
       @batch_size = batch_size
       @max_batch_chars = max_batch_chars
       @pause = pause
       @log = log
+      @accept = accept
     end
 
     # Translates `keys` (looked up in `source`) and returns
-    # `[translations, failed_keys]`.
+    # `[translations, failed_keys, rejections]`; `rejections` maps each failed
+    # key whose reply in its last round `accept` rejected to the reason.
     def call(source, keys, instructions:)
       @source = source
       @instructions = instructions
       @unparseable = []
+      @rejections = {}
 
       translated, missing = translate_keys(keys)
       missing = retry_missing(translated, missing)
 
       failed = missing + @unparseable
       report_failed(failed)
-      [translated, failed]
+      [translated, failed, @rejections]
     end
 
     private
@@ -75,7 +83,8 @@ module Locallingo
       batches(keys).each do |batch|
         result = translate_batch(batch.to_h { |key| [key, @source[key]] })
         batch.each do |key|
-          if result.key?(key) && !result[key].to_s.empty?
+          @rejections.delete(key)
+          if result.key?(key) && !result[key].to_s.empty? && accepted?(key, result[key])
             translations[key] = result[key]
           else
             failed << key
@@ -85,6 +94,17 @@ module Locallingo
       end
 
       [translations, failed]
+    end
+
+    def accepted?(key, value)
+      return true unless @accept
+
+      verdict = @accept.call(key, @source[key], value)
+      return true if verdict == true
+
+      @rejections[key] = verdict.is_a?(Hash) ? verdict : {}
+      log("  Rejected #{key}: #{@rejections[key]}", level: :warn)
+      false
     end
 
     def batches(keys)
