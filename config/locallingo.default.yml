@@ -33,7 +33,7 @@ defaults:
     # Seconds to sleep after each batch (rate-limit courtesy). 0 disables it.
     pause: 1.0
     # Regex patterns (strings) for tokens the Translator API must keep exactly,
-    # e.g. ['\{\{.*?\}\}', '\{%.*?%\}'] for Liquid. A reply whose tokens differ
+    # e.g. ['\{\{.*?\}\}', '\{%.*?%\}'] for Liquid (`.` spans lines). A reply whose tokens differ
     # from its source (by count) is retried, then reported as failed. The
     # `lingo` CLI does not use it. [] = no check.
     placeholders: []

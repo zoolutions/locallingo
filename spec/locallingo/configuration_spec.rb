@@ -55,7 +55,7 @@ RSpec.describe Locallingo::Configuration do
       with_app(locales: {}, config: { "translate" => { "placeholders" => ['\{\{.*?\}\}', "%\\{\\w+\\}"] } }) do |root|
         patterns = config_for(root).placeholders
 
-        expect(patterns).to eq([/\{\{.*?\}\}/, /%\{\w+\}/])
+        expect(patterns).to eq([/\{\{.*?\}\}/m, /%\{\w+\}/m])
         expect(patterns).to be_frozen
         expect(patterns).to all(be_frozen)
       end
@@ -65,6 +65,21 @@ RSpec.describe Locallingo::Configuration do
       config = described_class.new(root_path: Dir.pwd, data: { "translate" => { "placeholders" => ["{{("] } })
 
       expect { config.placeholders }.to raise_error(Locallingo::Error, /translate\.placeholders.*"\{\{\("/)
+    end
+
+    it "lets a string pattern's . match a newline, as /m does" do
+      config = described_class.new(root_path: Dir.pwd, data: { "translate" => { "placeholders" => ['\{\{.*?\}\}'] } })
+
+      expect("{{ a\nb }}"[config.placeholders.first]).to eq("{{ a\nb }}")
+    end
+
+    it "raises an actionable error for a pattern that is not a string" do
+      [{ "a" => "b" }, 5, nil].each do |pattern|
+        config = described_class.new(root_path: Dir.pwd, data: { "translate" => { "placeholders" => [pattern] } })
+
+        expect { config.placeholders }
+          .to raise_error(Locallingo::Error, /translate\.placeholders.*expected a regex string/)
+      end
     end
   end
 

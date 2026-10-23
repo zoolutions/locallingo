@@ -204,7 +204,7 @@ result.failed       # => keys that failed after retries
 
 Texts with their own token syntax (a template language, an interpolation
 format other than `placeholder_style`) pass `placeholders:`, a list of Regexps
-(default: `translate.placeholders`, regex strings, `[]`). The prompt names the
+(default: `translate.placeholders`, regex strings compiled with `Regexp::MULTILINE`, `[]`). The prompt names the
 patterns, and each reply is checked: the tokens every pattern matches in a
 value must equal its source's, compared on the exact text and by count (order
 may change). A value that differs is re-requested in the omitted-key rounds;

@@ -117,6 +117,18 @@ RSpec.describe Locallingo::BatchTranslator do
       expect(calls).to eq([%w[a b], %w[a], %w[a]])
     end
 
+    it "drops a stale rejection when the key is omitted in a later round" do
+      provider = build_provider(calls) do |payload|
+        calls.size == 1 ? payload.transform_values { "kaputt" } : {}
+      end
+
+      _translated, failed, rejections = build_translator(provider, accept:)
+                                        .call({ "a" => "A {{ x }}" }, %w[a], instructions: "x")
+
+      expect(failed).to eq(["a"])
+      expect(rejections).to eq({})
+    end
+
     it "passes the key, the source text and the reply to accept" do
       seen = []
       provider = build_provider(calls) { |payload| payload.transform_values { |v| "DE:#{v}" } }

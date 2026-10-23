@@ -199,6 +199,13 @@ RSpec.describe Locallingo::QualityChecker do
       end
     end
 
+    it "raises on a key given both as a Symbol and as a String" do
+      bare_checker do |checker|
+        expect { checker.check_texts({ a: "x", "a" => "y" }, locale: "en") }
+          .to raise_error(Locallingo::Error, /Duplicate key "a"/)
+      end
+    end
+
     it "returns the static findings for a hash without reading any locale file" do
       bare_checker do |checker, root|
         expect(Dir.exist?(File.join(root, "config/locales"))).to be(false)

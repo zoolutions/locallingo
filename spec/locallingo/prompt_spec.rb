@@ -101,8 +101,15 @@ RSpec.describe Locallingo::Prompt do
     end
 
     it "keeps the prompt byte-identical without patterns" do
-      expect(described_class.translation(config:, from: "en", to: "de", placeholders: []))
-        .to eq(fixture("ui_prompt_de.txt"))
+      [[], nil].each do |placeholders|
+        expect(described_class.translation(config:, from: "en", to: "de", placeholders:))
+          .to eq(fixture("ui_prompt_de.txt"))
+      end
+    end
+
+    it "wraps a single Regexp" do
+      expect(described_class.translation(config:, from: "en", to: "de", placeholders: patterns.first))
+        .to include("with the same count: `\\{\\{.*?\\}\\}`\n")
     end
   end
 

@@ -59,7 +59,7 @@ module Locallingo
     # checks on every pair, then, with +use_ai+, the AI pass over every given
     # key (unsampled). Returns the suggestion hashes `check` returns.
     def check_texts(texts, locale:, use_ai: false)
-      texts = texts.to_h { |key, text| [key.to_s, text] }.select { |_key, text| text.is_a?(String) }
+      texts = stringify_keys(texts).select { |_key, text| text.is_a?(String) }
       suggestions = texts.flat_map { |key, text| check_text(key, text, locale) }
       suggestions.concat(suggest_improvements(texts, locale)) if use_ai && texts.any?
       suggestions
@@ -114,6 +114,14 @@ module Locallingo
       suggestions.concat(Quality::BritishSpellings.check(key, text, locale)) if british_spellings_for?(locale)
       suggestions << long_text_suggestion(key, text, locale) if text.length > LONG_TEXT_THRESHOLD
       suggestions.compact
+    end
+
+    def stringify_keys(texts)
+      texts.each_with_object({}) do |(key, text), all|
+        raise Error, "Duplicate key #{key.to_s.inspect} (e.g. :#{key} and \"#{key}\")" if all.key?(key.to_s)
+
+        all[key.to_s] = text
+      end
     end
 
     def british_spellings_for?(locale)

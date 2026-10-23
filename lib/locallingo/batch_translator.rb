@@ -38,7 +38,7 @@ module Locallingo
 
     # Translates `keys` (looked up in `source`) and returns
     # `[translations, failed_keys, rejections]`; `rejections` maps each failed
-    # key whose last value `accept` rejected to the reason.
+    # key whose reply in its last round `accept` rejected to the reason.
     def call(source, keys, instructions:)
       @source = source
       @instructions = instructions
@@ -50,7 +50,7 @@ module Locallingo
 
       failed = missing + @unparseable
       report_failed(failed)
-      [translated, failed, @rejections.slice(*failed)]
+      [translated, failed, @rejections]
     end
 
     private
@@ -83,6 +83,7 @@ module Locallingo
       batches(keys).each do |batch|
         result = translate_batch(batch.to_h { |key| [key, @source[key]] })
         batch.each do |key|
+          @rejections.delete(key)
           if result.key?(key) && !result[key].to_s.empty? && accepted?(key, result[key])
             translations[key] = result[key]
           else
@@ -99,10 +100,7 @@ module Locallingo
       return true unless @accept
 
       verdict = @accept.call(key, @source[key], value)
-      if verdict == true
-        @rejections.delete(key)
-        return true
-      end
+      return true if verdict == true
 
       @rejections[key] = verdict.is_a?(Hash) ? verdict : {}
       log("  Rejected #{key}: #{@rejections[key]}", level: :warn)

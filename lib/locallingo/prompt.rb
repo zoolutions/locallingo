@@ -52,6 +52,7 @@ module Locallingo
     end
 
     def placeholders_rule(patterns)
+      patterns = Array(patterns)
       return "" if patterns.empty?
 
       sources = patterns.map { |pattern| "`#{pattern.source}`" }.join(", ")
