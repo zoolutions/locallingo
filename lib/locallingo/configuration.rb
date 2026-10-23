@@ -72,6 +72,12 @@ module Locallingo
     def british_spellings? = !!dig("quality", "british_spellings")
     def terminology_setting = dig("quality", "terminology")
 
+    # Token patterns (`translate.placeholders`, regex strings) whose matches a
+    # Translator must keep unchanged; [] by default.
+    def placeholders
+      Array(dig("translate", "placeholders")).map { |pattern| compile_placeholder(pattern) }.freeze
+    end
+
     # --- prompt scaffolding --------------------------------------------------
 
     def context = data.fetch("context", "a business application")
@@ -122,6 +128,12 @@ module Locallingo
     private
 
     def dig(*keys) = data.dig(*keys)
+
+    def compile_placeholder(pattern)
+      (pattern.is_a?(Regexp) ? pattern : Regexp.new(pattern.to_s)).dup.freeze
+    rescue RegexpError => e
+      raise Error, "translate.placeholders: #{pattern.to_s.inspect} is not a valid regular expression (#{e.message})"
+    end
 
     # Merge: shipped defaults <- user `defaults:` <- selected `packages:` entry.
     def resolve(source)

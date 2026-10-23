@@ -16,6 +16,9 @@ module Locallingo
   # optional British-spelling drift, and a very-long-text heuristic. An optional
   # AI pass (RubyLLM) reviews a sample for clarity/professionalism.
   #
+  # `check` and `check_key` read the locale files; `check_texts` runs the same
+  # checks over a `{ key => text }` hash held anywhere else.
+  #
   # `fix!` rewrites the auto-fixable suggestions (universal fixes + British
   # spellings) back into the locale files, preserving case.
   class QualityChecker
@@ -23,11 +26,13 @@ module Locallingo
 
     attr_reader :config, :verbose, :logger
 
-    def initialize(config: nil, root_path: nil, package: nil, verbose: false, logger: nil)
+    # +context+ is an optional RubyLLM::Context the AI pass runs on (e.g. a
+    # per-call key), as for Translator.
+    def initialize(config: nil, root_path: nil, package: nil, verbose: false, logger: nil, context: nil)
       @config = config || Configuration.load(root_path: root_path || Dir.pwd, package:)
       @verbose = verbose
       @logger = logger
-      @provider = Providers::RubyLLM.new(provider: @config.provider)
+      @provider = Providers::RubyLLM.new(provider: @config.provider, context:)
       @terminology = Quality::Terminology.new(@config.terminology_setting, base_path: @config.base_path)
     end
 
@@ -37,20 +42,26 @@ module Locallingo
     def check(locale: nil, use_ai: false, prefix: nil, keys: nil)
       locale ||= config.source_locale
       translations = scoped_translations(locale, prefix:, keys:)
+      return check_texts(translations, locale:, use_ai:) if keys || !use_ai
 
-      suggestions = translations.flat_map { |key, text| check_text(key, text, locale) }
-      suggestions.concat(keys ? suggest_improvements(translations, locale) : ai_sample(translations, locale)) if use_ai
-      suggestions
+      check_texts(translations, locale:).concat(ai_sample(translations, locale))
     end
 
     # Check a single key.
     def check_key(key, locale, use_ai: false)
-      translations = load_locale_translations(locale)
-      text = translations[key]
+      text = load_locale_translations(locale)[key]
       return [{ key:, error: "Key not found" }] unless text
 
-      suggestions = check_text(key, text, locale)
-      suggestions.concat(suggest_improvements({ key => text }, locale)) if use_ai
+      check_texts({ key => text }, locale:, use_ai:)
+    end
+
+    # Check a `{ key => text }` hash without reading any file: the static
+    # checks on every pair, then, with +use_ai+, the AI pass over every given
+    # key (unsampled). Returns the suggestion hashes `check` returns.
+    def check_texts(texts, locale:, use_ai: false)
+      texts = texts.to_h { |key, text| [key.to_s, text] }.select { |_key, text| text.is_a?(String) }
+      suggestions = texts.flat_map { |key, text| check_text(key, text, locale) }
+      suggestions.concat(suggest_improvements(texts, locale)) if use_ai && texts.any?
       suggestions
     end
 

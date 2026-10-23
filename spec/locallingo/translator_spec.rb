@@ -125,4 +125,106 @@ RSpec.describe Locallingo::Translator do
     expect(result.translations).to eq("title" => "Hallo")
     expect(context).to have_received(:chat)
   end
+
+  describe "placeholders:" do
+    let(:liquid) { [/\{\{.*?\}\}/m, /\{%.*?%\}/m] }
+    let(:texts) do
+      { "subject" => "Finish setting up {{ item.name }}",
+        "body" => "{% paragraph %}Your {{ item.name }} is ready.{% endparagraph %}" }
+    end
+    let(:good) do
+      { "subject" => "Richten Sie {{ item.name }} fertig ein",
+        "body" => "{% paragraph %}Ihr {{ item.name }} ist bereit.{% endparagraph %}" }
+    end
+
+    before { stub_const("Locallingo::BatchTranslator::BASE_SLEEP_DURATION", 0) }
+
+    it "accepts a reply that keeps every token" do
+      stub_chat { |payload| good.slice(*payload.keys) }
+
+      result = build.translate(texts, from: "en", to: "de", placeholders: liquid)
+
+      expect(result.translations).to eq(good)
+      expect(result.failed).to eq([])
+      expect(result.rejections).to eq({})
+    end
+
+    it "re-requests a reply with a translated token and accepts a retry that keeps the tokens" do
+      stub_chat do |payload|
+        next good.slice(*payload.keys) unless calls.size == 1
+
+        good.merge("subject" => "Richten Sie {{ artikel.name }} fertig ein")
+      end
+
+      result = build.translate(texts, from: "en", to: "de", placeholders: liquid)
+
+      expect(calls.map { |c| c[:payload].keys }).to eq([%w[subject body], %w[subject]])
+      expect(result.translations).to eq(good)
+      expect(result.failed).to eq([])
+      expect(result.rejections).to eq({})
+    end
+
+    it "reports a reply that still differs after the rounds as failed, never as a translation" do
+      broken = good.merge("body" => "Ihr {{ item.name }} ist bereit.{% endparagraph %}")
+      stub_chat { |payload| broken.slice(*payload.keys) }
+
+      result = build.translate(texts, from: "en", to: "de", placeholders: liquid)
+
+      expect(result.translations).to eq(good.slice("subject"))
+      expect(result.failed).to eq(["body"])
+      expect(result.rejections).to eq("body" => { "missing" => ["{% paragraph %}"], "extra" => [] })
+      expect(calls.size).to eq(1 + Locallingo::BatchTranslator::MAX_MISSING_RETRIES)
+    end
+
+    it "wraps a single Regexp" do
+      stub_chat { |payload| payload.transform_values { "kaputt" } }
+
+      result = build.translate(texts.slice("subject"), from: "en", to: "de", placeholders: liquid.first)
+
+      expect(result.rejections).to eq("subject" => { "missing" => ["{{ item.name }}"], "extra" => [] })
+    end
+
+    it "names the patterns in the prompt" do
+      stub_chat { |payload| good.slice(*payload.keys) }
+
+      build.translate(texts, from: "en", to: "de", style: :prose, placeholders: liquid)
+
+      expected = Locallingo::Prompt.translation(config:, from: "en", to: "de", style: :prose, placeholders: liquid)
+      expect(calls.map { |c| c[:instructions] }.uniq).to eq([expected])
+    end
+
+    it "defaults to translate.placeholders" do
+      configured = Locallingo::Configuration.new(
+        root_path: Dir.pwd, data: config.data.merge("translate" => config.data["translate"].merge(
+          "placeholders" => ['\{\{.*?\}\}']
+        ))
+      )
+      stub_chat { |payload| payload.transform_values { "kaputt" } }
+
+      result = described_class.new(config: configured, pause: 0, logger: Logger.new(nil))
+                              .translate(texts.slice("subject"), from: "en", to: "de")
+
+      expect(result.failed).to eq(["subject"])
+      expect(calls.first[:instructions]).to include("`\\{\\{.*?\\}\\}`")
+    end
+
+    it "checks nothing and sends today's prompt without placeholders or config" do
+      stub_chat { |payload| payload.transform_values { "kaputt" } }
+
+      result = build.translate(texts, from: "en", to: "de")
+
+      expect(result.translations).to eq("subject" => "kaputt", "body" => "kaputt")
+      expect(result.rejections).to eq({})
+      expect(calls.first[:instructions]).to eq(Locallingo::Prompt.translation(config:, from: "en", to: "de"))
+      expect(calls.first[:instructions]).not_to include("Preserve every token")
+    end
+
+    it "rejects a pattern that is not a Regexp" do
+      stub_chat
+
+      expect { build.translate(texts, from: "en", to: "de", placeholders: ["{{"]) }
+        .to raise_error(Locallingo::Error, /placeholders/)
+      expect(calls).to be_empty
+    end
+  end
 end

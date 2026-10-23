@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+- `Translator#translate(…, placeholders:)` takes a list of Regexps (default:
+  the new `translate.placeholders` config key, regex strings, `[]`) for the
+  tokens the texts use. The prompt names the patterns, and a value whose
+  tokens differ from its source's (exact text, by count) is re-requested in
+  the omitted-key rounds, then reported in `failed` instead of returned.
+  `Locallingo::Placeholders` is the check. (#43)
+- `Translator::Result#rejections` (`{ key => { "missing" => [...], "extra" =>
+  [...] } }`) and `BatchTranslator.new(…, accept:)`, whose `call` now returns
+  `[translations, failed, rejections]`. `RecordTranslator#call` passes
+  `placeholders:` through. The `lingo` CLI is unchanged. (#43)
+- `QualityChecker#check_texts(texts, locale:, use_ai: false)` runs the static
+  checks, terminology, British spellings and the optional AI review over a
+  `{ key => text }` hash instead of the locale files; `QualityChecker.new`
+  takes `context:` (a `RubyLLM::Context`) for the AI pass. (#43)
+
 ## [0.6.0] - 2026-10-15
 
 ### Added

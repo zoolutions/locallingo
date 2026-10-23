@@ -129,6 +129,21 @@ RSpec.describe Locallingo::RecordTranslator, :active_record do
     expect(other.reload.body["de"]).to eq("title" => "DE:Bye")
   end
 
+  it "writes nothing for a record with a segment whose tokens differ, and reports its path" do
+    stub_const("Locallingo::BatchTranslator::BASE_SLEEP_DURATION", 0)
+    record = article("title" => "Hello {{ name }}", "intro" => "Plain")
+    other = article("title" => "Bye {{ name }}")
+    stub_chat do |_payload, reply|
+      reply.merge("#{record.id}.title" => "Hallo {{ Name }}").slice(*reply.keys)
+    end
+
+    result = described_class.new(translator:).call(Article.all, to: "de", placeholders: [/\{\{.*?\}\}/])
+
+    expect(result).to eq(translated: 1, failed: { record.id => ["title"] }, skipped: [])
+    expect(record.reload.body.keys).to eq(["en"])
+    expect(other.reload.body["de"]).to eq("title" => "DE:Bye {{ name }}")
+  end
+
   it "writes nothing for a record whose every segment failed" do
     record = article("title" => "Hello")
     stub_chat { |_payload, _reply| {} }

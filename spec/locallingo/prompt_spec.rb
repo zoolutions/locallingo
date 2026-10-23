@@ -81,6 +81,31 @@ RSpec.describe Locallingo::Prompt do
     end
   end
 
+  describe "placeholders" do
+    let(:patterns) { [/\{\{.*?\}\}/m, /\{%.*?%\}/m] }
+
+    it "adds a token rule under General Rules, after the placeholder_style line, naming each pattern's source" do
+      prompt = described_class.translation(config:, from: "en", to: "de", placeholders: patterns)
+      rule = "- Preserve every token matching these patterns exactly as it appears, with the same count: " \
+             "`\\{\\{.*?\\}\\}`, `\\{%.*?%\\}`\n"
+
+      expect(prompt).to include("- Preserve placeholders like %{name} exactly as they appear\n#{rule}" \
+                                "- Preserve HTML tags if present")
+      expect(prompt.index(rule)).to be < prompt.index("## Terminology")
+    end
+
+    it "adds the rule to the :prose prompt too" do
+      prompt = described_class.translation(config:, from: "en", to: "de", style: :prose, placeholders: patterns)
+
+      expect(prompt).to include("Preserve every token matching these patterns")
+    end
+
+    it "keeps the prompt byte-identical without patterns" do
+      expect(described_class.translation(config:, from: "en", to: "de", placeholders: []))
+        .to eq(fixture("ui_prompt_de.txt"))
+    end
+  end
+
   it "rejects an unknown or nil style" do
     [:poem, nil].each do |style|
       expect { described_class.translation(config:, from: "en", to: "de", style:) }

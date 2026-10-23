@@ -46,6 +46,28 @@ RSpec.describe Locallingo::Configuration do
     end
   end
 
+  describe "#placeholders" do
+    it "is an empty list by default" do
+      Dir.mktmpdir { |root| expect(described_class.load(root_path: root).placeholders).to eq([]) }
+    end
+
+    it "compiles translate.placeholders into frozen regexps" do
+      with_app(locales: {}, config: { "translate" => { "placeholders" => ['\{\{.*?\}\}', "%\\{\\w+\\}"] } }) do |root|
+        patterns = config_for(root).placeholders
+
+        expect(patterns).to eq([/\{\{.*?\}\}/, /%\{\w+\}/])
+        expect(patterns).to be_frozen
+        expect(patterns).to all(be_frozen)
+      end
+    end
+
+    it "raises an actionable error for an invalid pattern" do
+      config = described_class.new(root_path: Dir.pwd, data: { "translate" => { "placeholders" => ["{{("] } })
+
+      expect { config.placeholders }.to raise_error(Locallingo::Error, /translate\.placeholders.*"\{\{\("/)
+    end
+  end
+
   it "deep-merges a package override onto defaults" do
     raw = <<~YAML
       defaults:

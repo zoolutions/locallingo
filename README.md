@@ -151,6 +151,19 @@ Locallingo::Manager.new(config:).validate           # => [violations]
 Locallingo::QualityChecker.new(config:).check(locale: "en")
 ```
 
+`QualityChecker#check_texts(texts, locale:, use_ai: false)` runs the same
+static checks, terminology, British spellings and optional AI review over a
+`{ key => text }` hash instead of the locale files, and returns the same
+suggestion hashes. With `use_ai: true` every given key is reviewed (no
+sampling). `QualityChecker.new(…, context:)` takes a `RubyLLM::Context` for
+the AI pass, as `Translator.new` does:
+
+```ruby
+checker = Locallingo::QualityChecker.new(config:, context: RubyLLM.context { |c| c.anthropic_api_key = key })
+checker.check_texts(result.translations, locale: "de", use_ai: true)
+# => [{ key:, text:, locale:, category:, issue:, match:, severity:, source: :static | :ai }, …]
+```
+
 `Locallingo::Configuration.parse(yaml, root_path:, package:)` resolves the same
 config from YAML text (ERB included) instead of reading `.locallingo.yml`. A
 configuration loaded from the file reads it when it is built, never cached.
@@ -186,8 +199,31 @@ result.failed       # => keys that failed after retries
 - `translate.max_batch_chars` (or `max_batch_chars:`) limits the source
   characters per batch (a single longer value is sent alone, not split); `translate.pause` (or `pause:`) is the sleep after each
   batch. Retries of failed or omitted keys keep their own backoff.
-- `Locallingo::Prompt.translation(config:, from:, to:, style:, instructions:)`
+- `Locallingo::Prompt.translation(config:, from:, to:, style:, instructions:, placeholders:)`
   returns the prompt itself.
+
+Texts with their own token syntax (a template language, an interpolation
+format other than `placeholder_style`) pass `placeholders:`, a list of Regexps
+(default: `translate.placeholders`, regex strings, `[]`). The prompt names the
+patterns, and each reply is checked: the tokens every pattern matches in a
+value must equal its source's, compared on the exact text and by count (order
+may change). A value that differs is re-requested in the omitted-key rounds;
+one that still differs is never returned, but listed in `failed` and in
+`rejections`:
+
+```ruby
+LIQUID = [/\{\{.*?\}\}/m, /\{%.*?%\}/m]
+
+result = translator.translate(texts, from: "en", to: "de", style: :prose, placeholders: LIQUID)
+result.translations # only values whose tokens match their source
+result.failed       # => ["body"]
+result.rejections   # => { "body" => { "missing" => ["{% paragraph %}"], "extra" => [] } }
+```
+
+`Locallingo::Placeholders.compare(source, translated, patterns)` is the check
+itself (`nil` when the tokens match). `RecordTranslator#call` takes
+`placeholders:` too; a record with a rejected segment is not written. The
+`lingo` CLI does not use `translate.placeholders`.
 
 `Locallingo::Drift` is the missing / outdated / hand-edited rule over the state
 entry shape (`source_hash`, `target_hash`, `manual`), for strings or nested

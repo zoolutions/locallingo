@@ -191,4 +191,83 @@ RSpec.describe Locallingo::QualityChecker do
       end
     end
   end
+
+  describe "#check_texts" do
+    def bare_checker(**kwargs)
+      Dir.mktmpdir do |root|
+        yield described_class.new(config: Locallingo::Configuration.load(root_path: root), **kwargs), root
+      end
+    end
+
+    it "returns the static findings for a hash without reading any locale file" do
+      bare_checker do |checker, root|
+        expect(Dir.exist?(File.join(root, "config/locales"))).to be(false)
+        allow(YAML).to receive(:load_file).and_call_original
+
+        suggestions = checker.check_texts({ "a" => "Click here to continue", b: "You can not do that" }, locale: "en")
+
+        expect(suggestions.map { |s| s[:key] }).to include("a", "b")
+        expect(suggestions.find { |s| s[:fix] }).to include(key: "b", fix: { from: "can not", to: "cannot" })
+        expect(suggestions.map { |s| s[:source] }.uniq).to eq([:static])
+        expect(YAML).not_to have_received(:load_file)
+      end
+    end
+
+    it "sends every given key to the AI pass, unsampled" do
+      payloads = []
+      stub_llm_chat do |payload:, **|
+        payloads << payload
+        { "k2" => { "issue" => "stiff", "suggestion" => "Hallo", "severity" => "warning" } }
+      end
+      texts = (1..5).to_h { |i| ["k#{i}", "Text #{i}"] }
+
+      bare_checker do |checker|
+        allow(checker.config).to receive(:quality_sample_size).and_return(1)
+        suggestions = checker.check_texts(texts, locale: "de", use_ai: true)
+
+        expect(payloads).to eq([texts])
+        expect(suggestions.last).to include(key: "k2", source: :ai, severity: :warning, locale: "de")
+      end
+    end
+
+    it "makes no AI call for an empty hash" do
+      payloads = []
+      stub_llm_chat do |payload:, **|
+        payloads << payload
+        {}
+      end
+
+      bare_checker { |checker| expect(checker.check_texts({}, locale: "en", use_ai: true)).to eq([]) }
+      expect(payloads).to be_empty
+    end
+
+    it "is what #check and #check_key return for the same texts" do
+      locales = { "en" => { "ui" => { "link" => "Click here to continue", "msg" => "You can not do that" } } }
+      with_app(locales:) do |root|
+        checker = checker_for(root)
+        texts = { "ui.link" => "Click here to continue", "ui.msg" => "You can not do that" }
+
+        expect(checker.check(locale: "en")).to eq(checker.check_texts(texts, locale: "en"))
+        expect(checker.check_key("ui.msg", "en")).to eq(checker.check_texts(texts.slice("ui.msg"), locale: "en"))
+        expect(checker.check_key("ui.nope", "en")).to eq([{ key: "ui.nope", error: "Key not found" }])
+      end
+    end
+  end
+
+  describe "context:" do
+    it "runs the AI pass on the given RubyLLM context" do
+      require "ruby_llm"
+      context = RubyLLM.context { |c| c.openai_api_key = "tenant-key" }
+      conversation = double
+      allow(conversation).to receive_messages(with_instructions: conversation, ask: double(content: "{}"))
+      allow(context).to receive(:chat).and_return(conversation)
+
+      Dir.mktmpdir do |root|
+        checker = described_class.new(config: Locallingo::Configuration.load(root_path: root), context:)
+        checker.check_texts({ "a" => "Hallo" }, locale: "de", use_ai: true)
+      end
+
+      expect(context).to have_received(:chat)
+    end
+  end
 end

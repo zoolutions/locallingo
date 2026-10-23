@@ -26,6 +26,23 @@ RSpec.describe Locallingo do # rubocop:disable RSpec/SpecFilePathFormat -- spans
                     inputs: ["Sorry, you can not pick a color for the wire transfer: click here asap."]
   end
 
+  context "with the placeholder token checks" do
+    let(:subject_call) do
+      lambda do |source, translated, patterns|
+        [
+          Locallingo::Placeholders.tokens(source, patterns),
+          Locallingo::Placeholders.compare(source, translated, patterns),
+          Locallingo::Placeholders.compare(source, source, patterns)
+        ]
+      end
+    end
+
+    it_behaves_like "runs inside a non-main Ractor",
+                    inputs: ["{% paragraph %}Your {{ item.name }}{% endparagraph %}",
+                             "Ihr {{ artikel.name }}{% endparagraph %}",
+                             [/\{\{.*?\}\}/m, /\{%.*?%\}/m].freeze]
+  end
+
   context "with drift decisions over literal state" do
     let(:subject_call) do
       lambda do |source, target, entry|

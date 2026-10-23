@@ -22,7 +22,7 @@ module Locallingo
 
     module_function
 
-    def translation(config:, from:, to:, style: :ui, instructions: nil)
+    def translation(config:, from:, to:, style: :ui, instructions: nil, placeholders: [])
       raise Error, "Unknown prompt style #{style.inspect} (expected one of #{STYLES.join(", ")})" unless
         STYLES.include?(style.to_s.to_sym)
 
@@ -41,7 +41,7 @@ module Locallingo
 
         ## General Rules
         - Preserve placeholders like #{config.placeholder_style} exactly as they appear
-        - Preserve HTML tags if present
+        #{placeholders_rule(placeholders)}- Preserve HTML tags if present
         #{style.to_sym == :prose ? MARKDOWN_RULES : BREVITY_RULE}- Escape every double quote (") inside a translated value as \\" so the reply stays valid JSON
         - Keep typographic quotes (“ ” „ ‚ « ») exactly as they appear in the source
         #{glossary_section(config)}#{language_guide_section(config, to)}#{instructions_section(instructions)}
@@ -49,6 +49,13 @@ module Locallingo
         with no surrounding prose and no markdown code fences:
         {"key1": "translated1", "key2": "translated2"}
       PROMPT
+    end
+
+    def placeholders_rule(patterns)
+      return "" if patterns.empty?
+
+      sources = patterns.map { |pattern| "`#{pattern.source}`" }.join(", ")
+      "- Preserve every token matching these patterns exactly as it appears, with the same count: #{sources}\n"
     end
 
     def glossary_section(config)
@@ -68,6 +75,6 @@ module Locallingo
       text.empty? ? "" : "\n## Additional Instructions\n#{text}\n"
     end
 
-    private_class_method :glossary_section, :language_guide_section, :instructions_section
+    private_class_method :placeholders_rule, :glossary_section, :language_guide_section, :instructions_section
   end
 end
