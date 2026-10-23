@@ -40,6 +40,7 @@ class Views::Docs::Pages::ConfigurationReference < DocsUI::Page
         | `provider` | `openai` | RubyLLM provider symbol |
         | `translate.model` | `gpt-5-mini` | Model for bulk translation |
         | `translate.batch_size` | `20` | Keys per translation request |
+        | `translate.placeholders` | `[]` | Regex strings (`.` spans lines) for tokens the `Translator` API must keep exactly; a reply whose tokens differ is retried, then reported as failed. Not used by the `lingo` CLI |
         | `quality.model` | `gpt-4o-mini` | Model for the AI quality pass |
         | `quality.british_spellings` | `false` | Flag en-only American→British drift |
         | `quality.sample_size` | `100` | How many keys `quality --ai` samples per run |
